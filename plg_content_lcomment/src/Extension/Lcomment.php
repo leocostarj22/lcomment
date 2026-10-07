@@ -57,8 +57,12 @@ final class Lcomment extends CMSPlugin implements SubscriberInterface
 
         $app->getLanguage()->load('com_lcomment', \JPATH_SITE);
 
-        $app->getDocument()->getWebAssetManager()
-            ->useStyle('com_lcomment.comments')
+        $webAssetManager = $app->getDocument()->getWebAssetManager();
+        // The active component here is whatever triggered onContentAfterDisplay
+        // (e.g. com_content), not com_lcomment, so its asset registry file is
+        // never auto-loaded — register it explicitly before using it.
+        $webAssetManager->getRegistry()->addExtensionRegistryFile('com_lcomment');
+        $webAssetManager->useStyle('com_lcomment.comments')
             ->useScript('com_lcomment.comments');
 
         $html = LayoutHelper::render(
