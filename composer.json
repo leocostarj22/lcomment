@@ -1,0 +1,14 @@
+{
+    "name": "lcsilva/lcomment",
+    "description": "LComment Joomla extension",
+    "type": "project",
+    "require-dev": {
+        "phpunit/phpunit": "^10.5"
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Lcsilva\\Component\\Lcomment\\Administrator\\": "com_lcomment/administrator/components/com_lcomment/src/",
+            "Tests\\": "tests/"
+        }
+    }
+}
