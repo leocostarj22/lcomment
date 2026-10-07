@@ -20,6 +20,8 @@ final class SubmissionPolicyTest extends TestCase
             text: $overrides['text'] ?? 'A valid comment body.',
             minLength: $overrides['minLength'] ?? 3,
             maxLength: $overrides['maxLength'] ?? 1000,
+            guestName: $overrides['guestName'] ?? 'A Guest',
+            guestEmail: $overrides['guestEmail'] ?? 'guest@example.com',
         );
     }
 
@@ -94,5 +96,89 @@ final class SubmissionPolicyTest extends TestCase
         ]));
 
         self::assertSame(['COM_LCOMMENT_ERROR_CONTEXT_INACTIVE'], $result->errors);
+    }
+
+    public function testAcceptedResultStoresTrimmedText(): void
+    {
+        $result = SubmissionPolicy::evaluate($this->request(['text' => "  Hello there.  \n"]));
+
+        self::assertTrue($result->accepted);
+        self::assertSame('Hello there.', $result->normalizedText);
+    }
+
+    public function testTrailingWhitespacePaddingDoesNotBypassMaximumLength(): void
+    {
+        // Validation measures the trimmed text, but the text actually stored
+        // must also be the trimmed text, or padding lets oversized input through.
+        $padded = str_repeat('a', 100) . str_repeat(' ', 100000);
+
+        $result = SubmissionPolicy::evaluate($this->request(['text' => $padded, 'maxLength' => 100]));
+
+        self::assertTrue($result->accepted);
+        self::assertSame(100, \strlen($result->normalizedText));
+    }
+
+    public function testRejectsEmptyGuestName(): void
+    {
+        $result = SubmissionPolicy::evaluate($this->request(['userId' => null, 'guestName' => '']));
+
+        self::assertFalse($result->accepted);
+        self::assertSame(['COM_LCOMMENT_ERROR_GUEST_NAME_REQUIRED'], $result->errors);
+    }
+
+    public function testRejectsWhitespaceOnlyGuestName(): void
+    {
+        $result = SubmissionPolicy::evaluate($this->request(['userId' => null, 'guestName' => "   \t"]));
+
+        self::assertFalse($result->accepted);
+        self::assertSame(['COM_LCOMMENT_ERROR_GUEST_NAME_REQUIRED'], $result->errors);
+    }
+
+    public function testRejectsGuestNameLongerThanColumnWidth(): void
+    {
+        $result = SubmissionPolicy::evaluate($this->request(['userId' => null, 'guestName' => str_repeat('a', 151)]));
+
+        self::assertFalse($result->accepted);
+        self::assertSame(['COM_LCOMMENT_ERROR_GUEST_NAME_TOO_LONG'], $result->errors);
+    }
+
+    public function testRejectsInvalidGuestEmail(): void
+    {
+        $result = SubmissionPolicy::evaluate($this->request(['userId' => null, 'guestEmail' => 'not-an-email']));
+
+        self::assertFalse($result->accepted);
+        self::assertSame(['COM_LCOMMENT_ERROR_GUEST_EMAIL_INVALID'], $result->errors);
+    }
+
+    public function testRejectsGuestEmailLongerThanColumnWidth(): void
+    {
+        $longLocalPart = str_repeat('a', 250);
+
+        $result = SubmissionPolicy::evaluate($this->request(['userId' => null, 'guestEmail' => $longLocalPart . '@example.com']));
+
+        self::assertFalse($result->accepted);
+        self::assertSame(['COM_LCOMMENT_ERROR_GUEST_EMAIL_TOO_LONG'], $result->errors);
+    }
+
+    public function testLoggedInUserIsNotRequiredToProvideGuestNameOrEmail(): void
+    {
+        $result = SubmissionPolicy::evaluate($this->request([
+            'userId' => 42,
+            'guestName' => '',
+            'guestEmail' => '',
+        ]));
+
+        self::assertTrue($result->accepted);
+    }
+
+    public function testGuestChecksTakePriorityOverTextErrors(): void
+    {
+        $result = SubmissionPolicy::evaluate($this->request([
+            'userId' => null,
+            'guestName' => '',
+            'text' => '',
+        ]));
+
+        self::assertSame(['COM_LCOMMENT_ERROR_GUEST_NAME_REQUIRED'], $result->errors);
     }
 }
