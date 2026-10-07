@@ -6,6 +6,7 @@ namespace Lcsilva\Component\Lcomment\Administrator\Model;
 
 \defined('_JEXEC') or die;
 
+use Joomla\CMS\Factory;
 use Joomla\CMS\Form\Form;
 use Joomla\CMS\MVC\Model\AdminModel;
 
@@ -29,7 +30,7 @@ final class ContextModel extends AdminModel
 
     protected function loadFormData()
     {
-        $data = $this->getUserState('com_lcomment.edit.context.data', []);
+        $data = Factory::getApplication()->getUserState('com_lcomment.edit.context.data', []);
 
         if (empty($data)) {
             $data = $this->getItem();
