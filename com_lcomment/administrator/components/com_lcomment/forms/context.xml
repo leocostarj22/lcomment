@@ -11,10 +11,14 @@
         />
         <field
             name="extension"
-            type="text"
+            type="sql"
             label="COM_LCOMMENT_CONTEXT_EXTENSION_LABEL"
             required="true"
             filter="cmd"
+            query="SELECT element AS value, name AS text FROM #__extensions WHERE type = 'component' AND enabled = 1 ORDER BY name ASC"
+            key_field="value"
+            value_field="text"
+            translate="true"
         />
         <field
             name="view"
