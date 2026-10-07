@@ -8,7 +8,7 @@
     <description>PLG_SYSTEM_LCOMMENT_XML_DESCRIPTION</description>
     <namespace path="src">Lcsilva\Plugin\System\Lcomment</namespace>
     <files>
-        <folder>services</folder>
+        <folder plugin="lcomment">services</folder>
         <folder>src</folder>
         <filename>index.html</filename>
     </files>

@@ -8,6 +8,7 @@ namespace Lcsilva\Plugin\Content\Lcomment\Extension;
 
 use Joomla\CMS\Event\Content\AfterDisplayEvent;
 use Joomla\CMS\Factory;
+use Joomla\CMS\Layout\LayoutHelper;
 use Joomla\CMS\MVC\Factory\MVCFactoryInterface;
 use Joomla\CMS\Plugin\CMSPlugin;
 use Joomla\CMS\Uri\Uri;
@@ -54,14 +55,24 @@ final class Lcomment extends CMSPlugin implements SubscriberInterface
         $items = $model->getItemsFor($extension, $view, $itemId);
         $returnUrl = Uri::getInstance()->toString();
 
+        $app->getLanguage()->load('com_lcomment', \JPATH_SITE);
+
         $app->getDocument()->getWebAssetManager()
             ->useStyle('com_lcomment.comments')
             ->useScript('com_lcomment.comments');
 
-        ob_start();
-        require \JPATH_ROOT . '/components/com_lcomment/tmpl/comment/default.php';
-        $html = ob_get_clean();
+        $html = LayoutHelper::render(
+            'comment',
+            [
+                'extension' => $extension,
+                'view' => $view,
+                'itemId' => $itemId,
+                'items' => $items,
+                'returnUrl' => $returnUrl,
+            ],
+            \JPATH_ROOT . '/components/com_lcomment/layouts'
+        );
 
-        $event->setArgument('result', $event->getArgument('result', '') . $html);
+        $event->addResult($html);
     }
 }

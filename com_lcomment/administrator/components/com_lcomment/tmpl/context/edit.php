@@ -7,10 +7,9 @@ use Joomla\CMS\Language\Text;
 
 /** @var \Lcsilva\Component\Lcomment\Administrator\View\Context\HtmlView $this */
 ?>
-<form action="<?php echo \Joomla\CMS\Router\Route::_('index.php?option=com_lcomment&task=context.save'); ?>" method="post" name="adminForm" id="context-form">
+<form action="<?php echo \Joomla\CMS\Router\Route::_('index.php?option=com_lcomment&layout=edit&id=' . (int) $this->item->id); ?>" method="post" name="adminForm" id="adminForm" class="form-validate">
     <?php foreach ($this->form->getFieldset() as $field) : ?>
         <div class="mb-3">
-            <?php echo $field->renderLabel(); ?>
             <?php echo $field->renderField(); ?>
         </div>
     <?php endforeach; ?>

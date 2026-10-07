@@ -14,6 +14,10 @@ final class CommentTable extends Table
     public function __construct(DatabaseInterface $db)
     {
         parent::__construct('#__lcomment_comments', 'id', $db);
+
+        // Table::publish()/trash() write to the column aliased as "published";
+        // this table stores that same state (0/1/-2) in a column named "state".
+        $this->setColumnAlias('published', 'state');
     }
 
     public function check(): bool

@@ -7,9 +7,14 @@
     <version>0.1.0</version>
     <description>PKG_LCOMMENT_XML_DESCRIPTION</description>
     <packagename>lcomment</packagename>
+    <scriptfile>script.php</scriptfile>
     <files>
         <file type="component" id="com_lcomment">com_lcomment.zip</file>
         <file type="plugin" id="lcomment" group="content">plg_content_lcomment.zip</file>
         <file type="plugin" id="lcomment" group="system">plg_system_lcomment.zip</file>
     </files>
+    <languages folder="language">
+        <language tag="en-GB">en-GB/en-GB.pkg_lcomment.sys.ini</language>
+        <language tag="pt-PT">pt-PT/pt-PT.pkg_lcomment.sys.ini</language>
+    </languages>
 </extension>

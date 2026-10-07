@@ -30,11 +30,12 @@ final class ContextsModel extends ListModel
         $search = (string) $this->getState('filter.search', '');
 
         if ($search !== '') {
+            $likeSearch = '%' . str_replace(['%', '_'], ['\%', '\_'], $search) . '%';
             $query->where(
                 '(' . $db->quoteName('extension') . ' LIKE :search1 OR ' . $db->quoteName('view') . ' LIKE :search2)'
             )
-                ->bind(':search1', $search, ParameterType::STRING)
-                ->bind(':search2', $search, ParameterType::STRING);
+                ->bind(':search1', $likeSearch, ParameterType::STRING)
+                ->bind(':search2', $likeSearch, ParameterType::STRING);
         }
 
         $ordering = $this->state->get('list.ordering', 'extension');

@@ -27,8 +27,12 @@ final class CommentController extends BaseController
         $extension = $input->getCmd('extension', '');
         $view = $input->getCmd('view', '');
         $itemId = $input->getInt('item_id', 0);
-        $text = $input->get('comment_text', '', 'RAW');
+        $text = (string) $input->get('comment_text', '', 'RAW');
+        $guestName = $input->getString('guest_name', '');
+        $guestEmail = $input->getString('guest_email', '');
         $returnUrl = base64_decode($input->getBase64('return', ''));
+
+        $stateKey = 'com_lcomment.comment.state.' . $extension . '.' . $view . '.' . $itemId;
 
         /** @var \Lcsilva\Component\Lcomment\Site\Model\CommentModel $model */
         $model = $this->getModel('Comment', 'Site');
@@ -42,12 +46,20 @@ final class CommentController extends BaseController
             contextModeration: $context !== null && (bool) $context->moderation,
             guestsAllowed: (bool) $params->get('allow_guests', 1),
             userId: $user && $user->id > 0 ? (int) $user->id : null,
-            text: (string) $text,
+            text: $text,
             minLength: (int) $params->get('min_length', 3),
             maxLength: (int) $params->get('max_length', 2000),
+            guestName: $guestName,
+            guestEmail: $guestEmail,
         ));
 
         if (!$policyResult->accepted) {
+            $app->setUserState($stateKey, [
+                'text' => $text,
+                'guest_name' => $guestName,
+                'guest_email' => $guestEmail,
+            ]);
+
             foreach ($policyResult->errors as $error) {
                 $app->enqueueMessage(Text::_($error), 'error');
             }
@@ -62,7 +74,7 @@ final class CommentController extends BaseController
         $table->extension = $extension;
         $table->view = $view;
         $table->item_id = $itemId;
-        $table->comment_text = $text;
+        $table->comment_text = $policyResult->normalizedText;
         $table->state = $policyResult->initialState;
         $table->language = $app->getLanguage()->getTag();
         $table->ip = $input->server->getString('REMOTE_ADDR', '');
@@ -70,11 +82,16 @@ final class CommentController extends BaseController
         if ($user && $user->id > 0) {
             $table->user_id = $user->id;
         } else {
-            $table->guest_name = $input->getString('guest_name', '');
-            $table->guest_email = $input->getString('guest_email', '');
+            $table->guest_name = $guestName;
+            $table->guest_email = $guestEmail;
         }
 
         if (!$table->check() || !$table->store()) {
+            $app->setUserState($stateKey, [
+                'text' => $text,
+                'guest_name' => $guestName,
+                'guest_email' => $guestEmail,
+            ]);
             $app->enqueueMessage($table->getError(), 'error');
             $app->redirect($returnUrl ?: 'index.php');
 

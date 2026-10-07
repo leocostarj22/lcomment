@@ -6,6 +6,7 @@ namespace Lcsilva\Component\Lcomment\Administrator\View\Context;
 
 \defined('_JEXEC') or die;
 
+use Joomla\CMS\Language\Text;
 use Joomla\CMS\MVC\View\HtmlView as BaseHtmlView;
 use Joomla\CMS\Toolbar\ToolbarHelper;
 
@@ -19,7 +20,10 @@ final class HtmlView extends BaseHtmlView
         $this->item = $this->get('Item');
         $this->form = $this->get('Form');
 
-        ToolbarHelper::title('COM_LCOMMENT_CONTEXTS_TITLE');
+        ToolbarHelper::title(Text::_('COM_LCOMMENT_CONTEXTS_TITLE'));
+        ToolbarHelper::apply('context.apply');
+        ToolbarHelper::save('context.save');
+        ToolbarHelper::cancel('context.cancel');
 
         parent::display($tpl);
     }

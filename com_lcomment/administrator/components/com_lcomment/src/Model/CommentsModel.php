@@ -30,8 +30,9 @@ final class CommentsModel extends ListModel
         $search = (string) $this->getState('filter.search', '');
 
         if ($search !== '') {
+            $likeSearch = '%' . str_replace(['%', '_'], ['\%', '\_'], $search) . '%';
             $query->where($db->quoteName('comment_text') . ' LIKE :search')
-                ->bind(':search', $search, ParameterType::STRING);
+                ->bind(':search', $likeSearch, ParameterType::STRING);
         }
 
         $state = $this->getState('filter.state', '');
@@ -39,6 +40,9 @@ final class CommentsModel extends ListModel
         if ($state !== '') {
             $query->where($db->quoteName('state') . ' = :state')
                 ->bind(':state', $state, ParameterType::INTEGER);
+        } else {
+            // Hide trashed comments from the default view, matching Joomla convention.
+            $query->where($db->quoteName('state') . ' != -2');
         }
 
         $ordering = $this->state->get('list.ordering', 'created');

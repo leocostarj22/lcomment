@@ -6,18 +6,30 @@ use Joomla\CMS\Factory;
 use Joomla\CMS\HTML\HTMLHelper;
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\Router\Route;
-use Joomla\CMS\Uri\Uri;
 
 /**
- * Expected variables in scope:
+ * Expected keys in $displayData (array or object):
  * @var string $extension
  * @var string $view
  * @var int    $itemId
  * @var array  $items
  * @var string $returnUrl
+ *
+ * Overridable via templates/<template>/html/layouts/comment.php
  */
+extract((array) $displayData);
 
-$user = Factory::getApplication()->getIdentity();
+$app = Factory::getApplication();
+$user = $app->getIdentity();
+
+// Read-once: repopulate the form after a rejected submission, then forget it.
+$stateKey = 'com_lcomment.comment.state.' . $extension . '.' . $view . '.' . $itemId;
+$previous = (array) $app->getUserState($stateKey, []);
+$app->setUserState($stateKey, null);
+
+$prefillText = $previous['text'] ?? '';
+$prefillGuestName = $previous['guest_name'] ?? '';
+$prefillGuestEmail = $previous['guest_email'] ?? '';
 ?>
 <div class="lcomment-block">
     <ul class="lcomment-list list-unstyled">
@@ -45,18 +57,18 @@ $user = Factory::getApplication()->getIdentity();
 
         <?php if (!$user || $user->id === 0) : ?>
             <div class="mb-2">
-                <label><?php echo Text::_('COM_LCOMMENT_FORM_NAME_LABEL'); ?></label>
-                <input type="text" name="guest_name" class="form-control">
+                <label for="lcomment-guest-name"><?php echo Text::_('COM_LCOMMENT_FORM_NAME_LABEL'); ?></label>
+                <input type="text" id="lcomment-guest-name" name="guest_name" class="form-control" value="<?php echo htmlspecialchars($prefillGuestName); ?>">
             </div>
             <div class="mb-2">
-                <label><?php echo Text::_('COM_LCOMMENT_FORM_EMAIL_LABEL'); ?></label>
-                <input type="email" name="guest_email" class="form-control">
+                <label for="lcomment-guest-email"><?php echo Text::_('COM_LCOMMENT_FORM_EMAIL_LABEL'); ?></label>
+                <input type="email" id="lcomment-guest-email" name="guest_email" class="form-control" value="<?php echo htmlspecialchars($prefillGuestEmail); ?>">
             </div>
         <?php endif; ?>
 
         <div class="mb-2">
-            <label><?php echo Text::_('COM_LCOMMENT_FORM_TEXT_LABEL'); ?></label>
-            <textarea name="comment_text" class="form-control" required></textarea>
+            <label for="lcomment-comment-text"><?php echo Text::_('COM_LCOMMENT_FORM_TEXT_LABEL'); ?></label>
+            <textarea id="lcomment-comment-text" name="comment_text" class="form-control" required><?php echo htmlspecialchars($prefillText); ?></textarea>
         </div>
 
         <?php echo HTMLHelper::_('form.token'); ?>

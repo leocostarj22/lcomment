@@ -6,6 +6,7 @@ namespace Lcsilva\Component\Lcomment\Administrator\View\Contexts;
 
 \defined('_JEXEC') or die;
 
+use Joomla\CMS\Language\Text;
 use Joomla\CMS\MVC\View\HtmlView as BaseHtmlView;
 use Joomla\CMS\Toolbar\ToolbarHelper;
 
@@ -21,7 +22,7 @@ final class HtmlView extends BaseHtmlView
         $this->pagination = $this->get('Pagination');
         $this->state = $this->get('State');
 
-        ToolbarHelper::title('COM_LCOMMENT_CONTEXTS_TITLE');
+        ToolbarHelper::title(Text::_('COM_LCOMMENT_CONTEXTS_TITLE'));
         ToolbarHelper::addNew('context.add');
         ToolbarHelper::editList('context.edit');
         ToolbarHelper::publishList('contexts.publish');
