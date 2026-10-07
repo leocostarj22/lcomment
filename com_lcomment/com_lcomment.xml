@@ -13,6 +13,7 @@
     <files folder="components/com_lcomment">
         <folder>src</folder>
         <folder>tmpl</folder>
+        <folder>services</folder>
         <filename>index.html</filename>
     </files>
     <languages folder="components/com_lcomment/language">
