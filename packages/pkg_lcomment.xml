@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<extension type="package" version="5.0" method="upgrade">
+    <name>pkg_lcomment</name>
+    <creationDate>2026-10-07</creationDate>
+    <author>leocostadeveloper</author>
+    <license>GNU General Public License version 2 or later</license>
+    <version>0.1.0</version>
+    <description>PKG_LCOMMENT_XML_DESCRIPTION</description>
+    <packagename>lcomment</packagename>
+    <files>
+        <file type="component" id="com_lcomment">com_lcomment.zip</file>
+        <file type="plugin" id="lcomment" group="content">plg_content_lcomment.zip</file>
+        <file type="plugin" id="lcomment" group="system">plg_system_lcomment.zip</file>
+    </files>
+</extension>
