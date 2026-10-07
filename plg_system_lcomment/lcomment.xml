@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<extension type="plugin" group="system" method="upgrade">
+    <name>plg_system_lcomment</name>
+    <creationDate>2026-10-07</creationDate>
+    <author>leocostadeveloper</author>
+    <license>GNU General Public License version 2 or later</license>
+    <version>0.1.0</version>
+    <description>PLG_SYSTEM_LCOMMENT_XML_DESCRIPTION</description>
+    <namespace path="src">Lcsilva\Plugin\System\Lcomment</namespace>
+    <files>
+        <folder>services</folder>
+        <folder>src</folder>
+        <filename>index.html</filename>
+    </files>
+    <languages folder="language">
+        <language tag="en-GB">en-GB/en-GB.plg_system_lcomment.sys.ini</language>
+        <language tag="pt-PT">pt-PT/pt-PT.plg_system_lcomment.sys.ini</language>
+    </languages>
+</extension>

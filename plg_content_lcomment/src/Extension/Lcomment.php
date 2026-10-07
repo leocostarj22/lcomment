@@ -54,6 +54,10 @@ final class Lcomment extends CMSPlugin implements SubscriberInterface
         $items = $model->getItemsFor($extension, $view, $itemId);
         $returnUrl = Uri::getInstance()->toString();
 
+        $app->getDocument()->getWebAssetManager()
+            ->useStyle('com_lcomment.comments')
+            ->useScript('com_lcomment.comments');
+
         ob_start();
         require \JPATH_ROOT . '/components/com_lcomment/tmpl/comment/default.php';
         $html = ob_get_clean();
