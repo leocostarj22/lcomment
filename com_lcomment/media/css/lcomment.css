@@ -15,22 +15,20 @@
     cursor: pointer;
 }
 
-.lcomment-depth-1 {
-    margin-left: 0;
-}
-
-.lcomment-depth-2 {
+/*
+ * Each reply level is a `.lcomment-list` nested inside its parent
+ * `.lcomment-item`, so a fixed margin-left here compounds naturally with
+ * the DOM nesting (depth 2 = 1.5rem, depth 3 = 3rem, ...). To cap the
+ * *visual* indent at depth 5 without capping the real nesting, zero out
+ * the margin on the child list of any item carrying `.lcomment-depth-5`
+ * (every item at structural depth >= 5, since the PHP side clamps the
+ * class with `min($depth, 5)`) — that stops indentation from growing
+ * any further for every deeper level too.
+ */
+.lcomment-item > .lcomment-list {
     margin-left: 1.5rem;
 }
 
-.lcomment-depth-3 {
-    margin-left: 3rem;
-}
-
-.lcomment-depth-4 {
-    margin-left: 4.5rem;
-}
-
-.lcomment-depth-5 {
-    margin-left: 6rem;
+.lcomment-depth-5 > .lcomment-list {
+    margin-left: 0;
 }
