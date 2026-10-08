@@ -109,4 +109,64 @@ final class CommentModel extends BaseDatabaseModel
 
         return (int) $db->loadResult() > 0;
     }
+
+    public function getReactionsFor(array $commentIds): array
+    {
+        $result = [];
+
+        foreach ($commentIds as $commentId) {
+            $result[(int) $commentId] = ['counts' => [], 'mine' => null];
+        }
+
+        if ($commentIds === []) {
+            return $result;
+        }
+
+        $db = $this->getDatabase();
+
+        $countsQuery = $db->getQuery(true)
+            ->select([
+                $db->quoteName('comment_id'),
+                $db->quoteName('reaction_type'),
+                'COUNT(*) AS ' . $db->quoteName('total'),
+            ])
+            ->from($db->quoteName('#__lcomment_reactions'))
+            ->whereIn($db->quoteName('comment_id'), $commentIds)
+            ->group([$db->quoteName('comment_id'), $db->quoteName('reaction_type')]);
+
+        $db->setQuery($countsQuery);
+
+        foreach ($db->loadObjectList() as $row) {
+            $result[(int) $row->comment_id]['counts'][(string) $row->reaction_type] = (int) $row->total;
+        }
+
+        $app = \Joomla\CMS\Factory::getApplication();
+        $user = $app->getIdentity();
+
+        $mineQuery = $db->getQuery(true)
+            ->select([$db->quoteName('comment_id'), $db->quoteName('reaction_type')])
+            ->from($db->quoteName('#__lcomment_reactions'))
+            ->whereIn($db->quoteName('comment_id'), $commentIds);
+
+        if ($user && $user->id > 0) {
+            $mineQuery->where($db->quoteName('user_id') . ' = :userId')
+                ->bind(':userId', $user->id, ParameterType::INTEGER);
+        } else {
+            $guestIp = $app->getInput()->server->getString('REMOTE_ADDR', '');
+            $guestSessionId = $app->getSession()->getId();
+
+            $mineQuery->where($db->quoteName('guest_ip') . ' = :guestIp')
+                ->where($db->quoteName('guest_session_id') . ' = :guestSessionId')
+                ->bind(':guestIp', $guestIp, ParameterType::STRING)
+                ->bind(':guestSessionId', $guestSessionId, ParameterType::STRING);
+        }
+
+        $db->setQuery($mineQuery);
+
+        foreach ($db->loadObjectList() as $row) {
+            $result[(int) $row->comment_id]['mine'] = (string) $row->reaction_type;
+        }
+
+        return $result;
+    }
 }
