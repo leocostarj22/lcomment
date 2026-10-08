@@ -6,3 +6,31 @@
     border-bottom: 1px solid #ddd;
     padding: 0.5rem 0;
 }
+
+.lcomment-reply {
+    margin-top: 0.5rem;
+}
+
+.lcomment-reply > summary {
+    cursor: pointer;
+}
+
+.lcomment-depth-1 {
+    margin-left: 0;
+}
+
+.lcomment-depth-2 {
+    margin-left: 1.5rem;
+}
+
+.lcomment-depth-3 {
+    margin-left: 3rem;
+}
+
+.lcomment-depth-4 {
+    margin-left: 4.5rem;
+}
+
+.lcomment-depth-5 {
+    margin-left: 6rem;
+}
