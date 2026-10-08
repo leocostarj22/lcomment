@@ -8,7 +8,7 @@
     <description>PKG_LCOMMENT_XML_DESCRIPTION</description>
     <packagename>lcomment</packagename>
     <scriptfile>script.php</scriptfile>
-    <files>
+    <files folder="constituents">
         <file type="component" id="com_lcomment">com_lcomment.zip</file>
         <file type="plugin" id="lcomment" group="content">plg_content_lcomment.zip</file>
         <file type="plugin" id="lcomment" group="system">plg_system_lcomment.zip</file>
