@@ -23,6 +23,7 @@ final class SubmissionPolicyTest extends TestCase
             guestName: $overrides['guestName'] ?? 'A Guest',
             guestEmail: $overrides['guestEmail'] ?? 'guest@example.com',
             itemIncluded: $overrides['itemIncluded'] ?? true,
+            parentValid: $overrides['parentValid'] ?? true,
         );
     }
 
@@ -217,5 +218,41 @@ final class SubmissionPolicyTest extends TestCase
         ]));
 
         self::assertSame(['COM_LCOMMENT_ERROR_ITEM_EXCLUDED'], $result->errors);
+    }
+
+    public function testRejectsInvalidParent(): void
+    {
+        $result = SubmissionPolicy::evaluate($this->request(['parentValid' => false]));
+
+        self::assertFalse($result->accepted);
+        self::assertSame(['COM_LCOMMENT_ERROR_INVALID_PARENT'], $result->errors);
+    }
+
+    public function testAllowsValidParent(): void
+    {
+        $result = SubmissionPolicy::evaluate($this->request(['parentValid' => true]));
+
+        self::assertTrue($result->accepted);
+    }
+
+    public function testItemExcludedTakesPriorityOverInvalidParent(): void
+    {
+        $result = SubmissionPolicy::evaluate($this->request([
+            'itemIncluded' => false,
+            'parentValid' => false,
+        ]));
+
+        self::assertSame(['COM_LCOMMENT_ERROR_ITEM_EXCLUDED'], $result->errors);
+    }
+
+    public function testInvalidParentTakesPriorityOverGuestChecks(): void
+    {
+        $result = SubmissionPolicy::evaluate($this->request([
+            'parentValid' => false,
+            'guestsAllowed' => false,
+            'userId' => null,
+        ]));
+
+        self::assertSame(['COM_LCOMMENT_ERROR_INVALID_PARENT'], $result->errors);
     }
 }

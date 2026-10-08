@@ -19,6 +19,10 @@ final class SubmissionPolicy
             return new SubmissionResult(false, ['COM_LCOMMENT_ERROR_ITEM_EXCLUDED']);
         }
 
+        if (!$request->parentValid) {
+            return new SubmissionResult(false, ['COM_LCOMMENT_ERROR_INVALID_PARENT']);
+        }
+
         if ($request->userId === null && !$request->guestsAllowed) {
             return new SubmissionResult(false, ['COM_LCOMMENT_ERROR_GUESTS_NOT_ALLOWED']);
         }

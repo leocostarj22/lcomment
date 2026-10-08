@@ -17,6 +17,7 @@ final class SubmissionRequest
         public readonly string $guestName = '',
         public readonly string $guestEmail = '',
         public readonly bool $itemIncluded = true,
+        public readonly bool $parentValid = true,
     ) {
     }
 }
