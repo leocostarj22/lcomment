@@ -39,11 +39,11 @@ futuros.
 Mesmo alvo das fases anteriores: Joomla 6.1.4 real (ambiente de validação
 ao vivo), PHP 8.1+. Qualquer comportamento do framework Joomla envolvido
 deve ser verificado contra o código-fonte real (`joomla-cms` 5.4-dev no
-GitHub) antes de ser assumido — em particular, **o comprimento real que
-`Joomla\Session\Session::getId()` pode devolver** deve ser confirmado
-antes de finalizar a largura da coluna `guest_session_id` (este spec
-propõe `VARCHAR(191)` como valor conservador, mas isso precisa ser
-confirmado contra a fonte real, não assumido).
+GitHub) antes de ser assumido — já verificado para esta sub-entrega: a
+própria tabela nativa `#__session` do Joomla define sua coluna
+`session_id` como `varbinary(192)` (confirmado em
+`installation/sql/mysql/base.sql`), então `guest_session_id` nesta
+sub-entrega usa a mesma largura (192), em vez de um valor adivinhado.
 
 ## Modelo de dados
 
@@ -55,7 +55,7 @@ confirmado contra a fonte real, não assumido).
 | comment_id | INT UNSIGNED NOT NULL | aponta para `#__lcomment_comments.id`, sem FK real (mesmo padrão das tabelas existentes) |
 | user_id | INT UNSIGNED NULL | preenchido se a reação foi de um utilizador autenticado |
 | guest_ip | VARCHAR(45) NULL | preenchido se a reação foi de um visitante (mesma largura já usada em `#__lcomment_comments.ip`) |
-| guest_session_id | VARCHAR(191) NULL | id da sessão Joomla do visitante no momento da reação — ver nota de verificação acima |
+| guest_session_id | VARCHAR(192) NULL | id da sessão Joomla do visitante no momento da reação — largura igual à coluna `session_id` da própria tabela nativa `#__session` do Joomla |
 | reaction_type | VARCHAR(20) NOT NULL | um dos 6 valores fixos: `like`, `love`, `haha`, `wow`, `sad`, `angry` |
 | created | DATETIME NOT NULL | |
 
