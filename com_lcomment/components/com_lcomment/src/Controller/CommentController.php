@@ -11,6 +11,7 @@ use Joomla\CMS\Factory;
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\MVC\Controller\BaseController;
 use Joomla\CMS\Session\Session;
+use Lcsilva\Component\Lcomment\Administrator\Service\ScopeEvaluator;
 use Lcsilva\Component\Lcomment\Administrator\Service\SubmissionPolicy;
 use Lcsilva\Component\Lcomment\Administrator\Service\SubmissionRequest;
 use Lcsilva\Component\Lcomment\Administrator\Table\CommentTable;
@@ -38,6 +39,11 @@ final class CommentController extends BaseController
         $model = $this->getModel('Comment', 'Site');
         $context = $model->getContext($extension, $view);
 
+        $categoryId = $model->getCategoryId($extension, $itemId);
+        $rules = $context !== null ? ScopeEvaluator::decodeRules((string) ($context->params ?? '')) : [];
+        $scopeMode = $context !== null ? (string) ($context->scope_mode ?? 'all') : 'all';
+        $itemIncluded = ScopeEvaluator::isItemIncluded($scopeMode, $rules, $itemId, $categoryId);
+
         $user = $app->getIdentity();
         $params = ComponentHelper::getParams('com_lcomment');
 
@@ -51,6 +57,7 @@ final class CommentController extends BaseController
             maxLength: (int) $params->get('max_length', 2000),
             guestName: $guestName,
             guestEmail: $guestEmail,
+            itemIncluded: $itemIncluded,
         ));
 
         if (!$policyResult->accepted) {
