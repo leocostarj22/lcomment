@@ -5,7 +5,7 @@
     <author>leocostadeveloper</author>
     <copyright></copyright>
     <license>GNU General Public License version 2 or later</license>
-    <version>0.3.0</version>
+    <version>0.4.0</version>
     <description>COM_LCOMMENT_XML_DESCRIPTION</description>
     <element>com_lcomment</element>
     <namespace path="src">Lcsilva\Component\Lcomment</namespace>
