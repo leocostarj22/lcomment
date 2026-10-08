@@ -14,6 +14,11 @@ use Joomla\CMS\Language\Text;
 Factory::getApplication()->getDocument()->getWebAssetManager()->useScript('form.validate');
 ?>
 <form action="<?php echo \Joomla\CMS\Router\Route::_('index.php?option=com_lcomment&layout=edit&id=' . (int) $this->item->id); ?>" method="post" name="adminForm" id="adminForm" class="form-validate">
+    <?php if ((string) ($this->item->scope_mode ?? 'all') === 'include' && empty($this->item->scope_rules)) : ?>
+        <div class="alert alert-warning">
+            <?php echo Text::_('COM_LCOMMENT_CONTEXT_SCOPE_INCLUDE_EMPTY_WARNING'); ?>
+        </div>
+    <?php endif; ?>
     <?php foreach ($this->form->getFieldset() as $field) : ?>
         <div class="mb-3">
             <?php echo $field->renderField(); ?>

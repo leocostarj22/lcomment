@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<form>
+    <fieldset name="rule">
+        <field
+            name="rule_type"
+            type="list"
+            default="item"
+            label="COM_LCOMMENT_SCOPE_RULE_TYPE_LABEL"
+        >
+            <option value="category">COM_LCOMMENT_SCOPE_RULE_TYPE_CATEGORY</option>
+            <option value="item">COM_LCOMMENT_SCOPE_RULE_TYPE_ITEM</option>
+        </field>
+        <field
+            name="rule_value"
+            type="number"
+            default="0"
+            label="COM_LCOMMENT_SCOPE_RULE_VALUE_LABEL"
+            description="COM_LCOMMENT_SCOPE_RULE_VALUE_DESC"
+            required="true"
+        />
+    </fieldset>
+</form>
