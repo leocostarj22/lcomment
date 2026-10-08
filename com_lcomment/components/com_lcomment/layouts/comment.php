@@ -8,6 +8,7 @@ use Joomla\CMS\Language\Text;
 use Joomla\CMS\Router\Route;
 use Lcsilva\Component\Lcomment\Administrator\Service\CommentTreeBuilder;
 use Lcsilva\Component\Lcomment\Administrator\Service\ReactionToggle;
+use Lcsilva\Component\Lcomment\Administrator\Service\VoteToggle;
 
 /**
  * Expected keys in $displayData (array or object):
@@ -16,6 +17,7 @@ use Lcsilva\Component\Lcomment\Administrator\Service\ReactionToggle;
  * @var int    $itemId
  * @var array  $items
  * @var array  $reactions
+ * @var array  $votes
  * @var string $returnUrl
  *
  * Overridable via templates/<template>/html/layouts/comment.php
@@ -44,6 +46,11 @@ $reactionEmoji = [
     'wow' => '😮',
     'sad' => '😢',
     'angry' => '😡',
+];
+
+$voteLabel = [
+    'helpful' => '👍 ' . Text::_('COM_LCOMMENT_VOTE_HELPFUL_LABEL'),
+    'unhelpful' => '👎 ' . Text::_('COM_LCOMMENT_VOTE_UNHELPFUL_LABEL'),
 ];
 
 // Anonymous closures, not named functions: this file is included via
@@ -117,7 +124,29 @@ $renderReactions = function (int $commentId) use ($returnUrl, $reactions, $react
     <?php
 };
 
-$renderNode = function (array $node, int $depth) use (&$renderNode, $renderForm, $renderReactions, $prefillParentId, $prefillText): void {
+$renderVotes = function (int $commentId) use ($returnUrl, $votes, $voteLabel): void {
+    $mine = $votes[$commentId]['mine'] ?? null;
+    $counts = $votes[$commentId]['counts'] ?? [];
+    ?>
+    <div class="lcomment-votes" data-comment-id="<?php echo $commentId; ?>">
+        <?php foreach (VoteToggle::VALID_TYPES as $type) : ?>
+            <?php $isMine = $mine === $type; ?>
+            <form method="post" action="<?php echo Route::_('index.php?option=com_lcomment&task=vote.save'); ?>" class="lcomment-vote-form<?php echo $isMine ? ' lcomment-vote-active' : ''; ?>">
+                <input type="hidden" name="comment_id" value="<?php echo $commentId; ?>">
+                <input type="hidden" name="vote_type" value="<?php echo $type; ?>">
+                <input type="hidden" name="return" value="<?php echo base64_encode($returnUrl); ?>">
+                <?php echo HTMLHelper::_('form.token'); ?>
+                <button type="submit" class="lcomment-vote-button" aria-pressed="<?php echo $isMine ? 'true' : 'false'; ?>">
+                    <span class="lcomment-vote-label"><?php echo $voteLabel[$type]; ?></span>
+                    <span class="lcomment-vote-count"><?php echo (int) ($counts[$type] ?? 0); ?></span>
+                </button>
+            </form>
+        <?php endforeach; ?>
+    </div>
+    <?php
+};
+
+$renderNode = function (array $node, int $depth) use (&$renderNode, $renderForm, $renderReactions, $renderVotes, $prefillParentId, $prefillText): void {
     $comment = $node['comment'];
     $commentId = (int) $comment->id;
     $depthClass = 'lcomment-depth-' . min($depth, 5);
@@ -133,6 +162,7 @@ $renderNode = function (array $node, int $depth) use (&$renderNode, $renderForm,
         <p><?php echo htmlspecialchars((string) $comment->comment_text); ?></p>
 
         <?php $renderReactions($commentId); ?>
+        <?php $renderVotes($commentId); ?>
 
         <details class="lcomment-reply"<?php echo $isReplyOpen ? ' open' : ''; ?>>
             <summary><?php echo Text::_('COM_LCOMMENT_REPLY_LABEL'); ?></summary>

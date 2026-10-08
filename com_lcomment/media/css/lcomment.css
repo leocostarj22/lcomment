@@ -63,3 +63,30 @@
 .lcomment-reaction-count {
     font-size: 0.85em;
 }
+
+.lcomment-votes {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+}
+
+.lcomment-vote-form {
+    margin: 0;
+}
+
+.lcomment-vote-button {
+    background: none;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.1rem 0.5rem;
+    font-size: 0.85em;
+}
+
+.lcomment-vote-active .lcomment-vote-button {
+    background: #e7f1ff;
+    border-color: #0d6efd;
+}
