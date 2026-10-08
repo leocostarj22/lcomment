@@ -28,6 +28,7 @@ final class HtmlView extends BaseHtmlView
         ToolbarHelper::publishList('contexts.publish');
         ToolbarHelper::unpublishList('contexts.unpublish');
         ToolbarHelper::deleteList('', 'contexts.delete');
+        ToolbarHelper::preferences('com_lcomment');
 
         parent::display($tpl);
     }
