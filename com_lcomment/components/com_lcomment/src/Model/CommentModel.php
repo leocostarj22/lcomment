@@ -63,4 +63,24 @@ final class CommentModel extends BaseDatabaseModel
 
         return $db->loadObjectList() ?: [];
     }
+
+    public function getCategoryId(string $extension, int $itemId): ?int
+    {
+        if ($extension !== 'com_content') {
+            return null;
+        }
+
+        $db = $this->getDatabase();
+        $query = $db->getQuery(true)
+            ->select($db->quoteName('catid'))
+            ->from($db->quoteName('#__content'))
+            ->where($db->quoteName('id') . ' = :itemId')
+            ->bind(':itemId', $itemId, ParameterType::INTEGER);
+
+        $db->setQuery($query);
+
+        $catid = $db->loadResult();
+
+        return $catid !== null ? (int) $catid : null;
+    }
 }
