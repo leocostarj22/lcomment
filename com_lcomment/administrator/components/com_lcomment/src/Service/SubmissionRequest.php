@@ -16,6 +16,7 @@ final class SubmissionRequest
         public readonly int $maxLength,
         public readonly string $guestName = '',
         public readonly string $guestEmail = '',
+        public readonly bool $itemIncluded = true,
     ) {
     }
 }

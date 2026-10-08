@@ -22,6 +22,7 @@ final class SubmissionPolicyTest extends TestCase
             maxLength: $overrides['maxLength'] ?? 1000,
             guestName: $overrides['guestName'] ?? 'A Guest',
             guestEmail: $overrides['guestEmail'] ?? 'guest@example.com',
+            itemIncluded: $overrides['itemIncluded'] ?? true,
         );
     }
 
@@ -180,5 +181,41 @@ final class SubmissionPolicyTest extends TestCase
         ]));
 
         self::assertSame(['COM_LCOMMENT_ERROR_GUEST_NAME_REQUIRED'], $result->errors);
+    }
+
+    public function testRejectsItemExcludedByScope(): void
+    {
+        $result = SubmissionPolicy::evaluate($this->request(['itemIncluded' => false]));
+
+        self::assertFalse($result->accepted);
+        self::assertSame(['COM_LCOMMENT_ERROR_ITEM_EXCLUDED'], $result->errors);
+    }
+
+    public function testAllowsItemIncludedByScope(): void
+    {
+        $result = SubmissionPolicy::evaluate($this->request(['itemIncluded' => true]));
+
+        self::assertTrue($result->accepted);
+    }
+
+    public function testContextCheckTakesPriorityOverItemExcluded(): void
+    {
+        $result = SubmissionPolicy::evaluate($this->request([
+            'contextActive' => false,
+            'itemIncluded' => false,
+        ]));
+
+        self::assertSame(['COM_LCOMMENT_ERROR_CONTEXT_INACTIVE'], $result->errors);
+    }
+
+    public function testItemExcludedTakesPriorityOverGuestChecks(): void
+    {
+        $result = SubmissionPolicy::evaluate($this->request([
+            'itemIncluded' => false,
+            'guestsAllowed' => false,
+            'userId' => null,
+        ]));
+
+        self::assertSame(['COM_LCOMMENT_ERROR_ITEM_EXCLUDED'], $result->errors);
     }
 }

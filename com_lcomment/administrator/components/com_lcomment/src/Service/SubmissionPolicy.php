@@ -15,6 +15,10 @@ final class SubmissionPolicy
             return new SubmissionResult(false, ['COM_LCOMMENT_ERROR_CONTEXT_INACTIVE']);
         }
 
+        if (!$request->itemIncluded) {
+            return new SubmissionResult(false, ['COM_LCOMMENT_ERROR_ITEM_EXCLUDED']);
+        }
+
         if ($request->userId === null && !$request->guestsAllowed) {
             return new SubmissionResult(false, ['COM_LCOMMENT_ERROR_GUESTS_NOT_ALLOWED']);
         }
