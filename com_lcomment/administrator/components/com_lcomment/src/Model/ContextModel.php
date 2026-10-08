@@ -58,7 +58,11 @@ final class ContextModel extends AdminModel
         }
 
         if (\is_object($data)) {
-            $rules = ScopeEvaluator::decodeRules((string) ($data->params ?? ''));
+            // $data->params may be a JSON string (restored from a previous
+            // failed-validation session) or an already-decoded array
+            // (AdminModel::getItem() runs it through Registry::toArray()) —
+            // decodeRules() accepts both.
+            $rules = ScopeEvaluator::decodeRules($data->params ?? null);
             $data->scope_rules = array_map(
                 static fn (array $rule): array => ['rule_type' => $rule['type'], 'rule_value' => $rule['value']],
                 $rules

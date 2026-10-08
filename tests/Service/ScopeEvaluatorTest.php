@@ -44,6 +44,25 @@ final class ScopeEvaluatorTest extends TestCase
         );
     }
 
+    public function testDecodeRulesAcceptsAnAlreadyDecodedArray(): void
+    {
+        // AdminModel::getItem() (Joomla core) converts the `params` column
+        // from a JSON string into a PHP array via Registry::toArray()
+        // before handing it to the admin edit form — decodeRules() must
+        // accept that shape too, not just a raw JSON string.
+        $params = ['scope_rules' => [['type' => 'item', 'value' => 7]]];
+
+        self::assertSame(
+            [['type' => 'item', 'value' => 7]],
+            ScopeEvaluator::decodeRules($params)
+        );
+    }
+
+    public function testDecodeRulesReturnsEmptyArrayForEmptyArray(): void
+    {
+        self::assertSame([], ScopeEvaluator::decodeRules([]));
+    }
+
     // --- isItemIncluded() ---
 
     public function testAllModeAlwaysIncludesRegardlessOfRules(): void

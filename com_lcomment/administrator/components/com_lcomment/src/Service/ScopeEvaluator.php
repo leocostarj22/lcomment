@@ -7,15 +7,21 @@ namespace Lcsilva\Component\Lcomment\Administrator\Service;
 final class ScopeEvaluator
 {
     /**
+     * Accepts either a JSON-encoded `params` string (as stored in the
+     * database and as the site plugin/controller read it) or an
+     * already-decoded array (as Joomla's AdminModel::getItem() hands back,
+     * since it runs `params` through Registry::toArray() before the admin
+     * edit form ever sees it).
+     *
      * @return array<int, array{type: string, value: int}>
      */
-    public static function decodeRules(?string $paramsJson): array
+    public static function decodeRules(string|array|null $params): array
     {
-        if ($paramsJson === null || $paramsJson === '') {
+        if ($params === null || $params === '') {
             return [];
         }
 
-        $decoded = json_decode($paramsJson, true);
+        $decoded = \is_array($params) ? $params : json_decode($params, true);
 
         if (!\is_array($decoded) || !isset($decoded['scope_rules']) || !\is_array($decoded['scope_rules'])) {
             return [];
