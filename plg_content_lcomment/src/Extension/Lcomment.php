@@ -78,7 +78,8 @@ final class Lcomment extends CMSPlugin implements SubscriberInterface
         $webAssetManager->getRegistry()->addExtensionRegistryFile('com_lcomment');
         $webAssetManager->useStyle('com_lcomment.comments')
             ->useScript('com_lcomment.comments')
-            ->useScript('com_lcomment.reactions');
+            ->useScript('com_lcomment.reactions')
+            ->useScript('com_lcomment.votes');
 
         $html = LayoutHelper::render(
             'comment',
