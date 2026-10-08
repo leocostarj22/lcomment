@@ -97,6 +97,49 @@ final class Lcomment extends CMSPlugin implements SubscriberInterface
             \JPATH_ROOT . '/components/com_lcomment/layouts'
         );
 
+        // Some third-party page/content renderers (e.g. a page builder's
+        // "dynamic content" addon fetching the article body through its
+        // own path) assemble the page without going through Joomla's
+        // normal <head> composition, so the useStyle()/useScript() calls
+        // above silently never reach the page even though this event
+        // still fires and this HTML still gets inserted. Guard with a
+        // static flag (once per request — this event can fire more than
+        // once per page, e.g. a blog/category view) and fall back to
+        // embedding <link>/<script> tags directly next to our own HTML,
+        // so the comment UI is never silently unstyled/unscripted
+        // regardless of how the surrounding page assembled its <head>.
+        static $assetsInlined = false;
+
+        if (!$assetsInlined) {
+            $assetsInlined = true;
+            $html = self::inlineAssetTags() . $html;
+        }
+
         $event->addResult($html);
+    }
+
+    private static function inlineAssetTags(): string
+    {
+        $files = [
+            'css/lcomment.css' => 'style',
+            'js/lcomment.js' => 'script',
+            'js/lcomment-reactions.js' => 'script',
+            'js/lcomment-votes.js' => 'script',
+        ];
+
+        $base = Uri::root() . 'media/com_lcomment/';
+        $tags = '';
+
+        foreach ($files as $path => $type) {
+            $file = \JPATH_ROOT . '/media/com_lcomment/' . $path;
+            $version = is_file($file) ? (string) filemtime($file) : '1';
+            $url = htmlspecialchars($base . $path . '?v=' . $version);
+
+            $tags .= $type === 'style'
+                ? '<link rel="stylesheet" href="' . $url . '">' . "\n"
+                : '<script src="' . $url . '" defer></script>' . "\n";
+        }
+
+        return $tags;
     }
 }
