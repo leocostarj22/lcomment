@@ -32,3 +32,34 @@
 .lcomment-depth-5 > .lcomment-list {
     margin-left: 0;
 }
+
+.lcomment-reactions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    margin-top: 0.5rem;
+}
+
+.lcomment-reaction-form {
+    margin: 0;
+}
+
+.lcomment-reaction-button {
+    background: none;
+    border: 1px solid #ddd;
+    border-radius: 999px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.1rem 0.5rem;
+}
+
+.lcomment-reaction-active .lcomment-reaction-button {
+    background: #e7f1ff;
+    border-color: #0d6efd;
+}
+
+.lcomment-reaction-count {
+    font-size: 0.85em;
+}

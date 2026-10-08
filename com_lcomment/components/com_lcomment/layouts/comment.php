@@ -7,6 +7,7 @@ use Joomla\CMS\HTML\HTMLHelper;
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\Router\Route;
 use Lcsilva\Component\Lcomment\Administrator\Service\CommentTreeBuilder;
+use Lcsilva\Component\Lcomment\Administrator\Service\ReactionToggle;
 
 /**
  * Expected keys in $displayData (array or object):
@@ -14,6 +15,7 @@ use Lcsilva\Component\Lcomment\Administrator\Service\CommentTreeBuilder;
  * @var string $view
  * @var int    $itemId
  * @var array  $items
+ * @var array  $reactions
  * @var string $returnUrl
  *
  * Overridable via templates/<template>/html/layouts/comment.php
@@ -34,6 +36,15 @@ $prefillGuestName = $previous['guest_name'] ?? '';
 $prefillGuestEmail = $previous['guest_email'] ?? '';
 
 $tree = CommentTreeBuilder::build($items);
+
+$reactionEmoji = [
+    'like' => '👍',
+    'love' => '❤️',
+    'haha' => '😂',
+    'wow' => '😮',
+    'sad' => '😢',
+    'angry' => '😡',
+];
 
 // Anonymous closures, not named functions: this file is included via
 // LayoutHelper::render() once per onContentAfterDisplay call, and a page
@@ -82,7 +93,31 @@ $renderForm = function (int $parentId, string $idSuffix, string $textValue) use 
     <?php
 };
 
-$renderNode = function (array $node, int $depth) use (&$renderNode, $renderForm, $prefillParentId, $prefillText): void {
+$renderReactions = function (int $commentId) use ($returnUrl, $reactions, $reactionEmoji): void {
+    $mine = $reactions[$commentId]['mine'] ?? null;
+    $counts = $reactions[$commentId]['counts'] ?? [];
+    ?>
+    <div class="lcomment-reactions" data-comment-id="<?php echo $commentId; ?>">
+        <?php foreach (ReactionToggle::VALID_TYPES as $type) : ?>
+            <?php $isMine = $mine === $type; ?>
+            <form method="post" action="<?php echo Route::_('index.php?option=com_lcomment&task=reaction.save'); ?>" class="lcomment-reaction-form<?php echo $isMine ? ' lcomment-reaction-active' : ''; ?>">
+                <input type="hidden" name="comment_id" value="<?php echo $commentId; ?>">
+                <input type="hidden" name="reaction_type" value="<?php echo $type; ?>">
+                <input type="hidden" name="return" value="<?php echo base64_encode($returnUrl); ?>">
+                <?php echo HTMLHelper::_('form.token'); ?>
+                <button type="submit" class="lcomment-reaction-button" aria-pressed="<?php echo $isMine ? 'true' : 'false'; ?>">
+                    <span class="lcomment-reaction-emoji"><?php echo $reactionEmoji[$type]; ?></span>
+                    <?php if (($counts[$type] ?? 0) > 0) : ?>
+                        <span class="lcomment-reaction-count"><?php echo (int) $counts[$type]; ?></span>
+                    <?php endif; ?>
+                </button>
+            </form>
+        <?php endforeach; ?>
+    </div>
+    <?php
+};
+
+$renderNode = function (array $node, int $depth) use (&$renderNode, $renderForm, $renderReactions, $prefillParentId, $prefillText): void {
     $comment = $node['comment'];
     $commentId = (int) $comment->id;
     $depthClass = 'lcomment-depth-' . min($depth, 5);
@@ -96,6 +131,8 @@ $renderNode = function (array $node, int $depth) use (&$renderNode, $renderForm,
             <span class="badge bg-warning"><?php echo Text::_('COM_LCOMMENT_LIST_PENDING_BADGE'); ?></span>
         <?php endif; ?>
         <p><?php echo htmlspecialchars((string) $comment->comment_text); ?></p>
+
+        <?php $renderReactions($commentId); ?>
 
         <details class="lcomment-reply"<?php echo $isReplyOpen ? ' open' : ''; ?>>
             <summary><?php echo Text::_('COM_LCOMMENT_REPLY_LABEL'); ?></summary>
