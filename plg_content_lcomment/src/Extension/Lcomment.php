@@ -14,6 +14,7 @@ use Joomla\CMS\Plugin\CMSPlugin;
 use Joomla\CMS\Uri\Uri;
 use Joomla\Event\SubscriberInterface;
 use Lcsilva\Component\Lcomment\Administrator\Service\ContextResolver;
+use Lcsilva\Component\Lcomment\Administrator\Service\ScopeEvaluator;
 
 final class Lcomment extends CMSPlugin implements SubscriberInterface
 {
@@ -46,6 +47,16 @@ final class Lcomment extends CMSPlugin implements SubscriberInterface
         $commentContext = $model->getContext($resolved['extension'], $resolved['view']);
 
         if ($commentContext === null) {
+            return;
+        }
+
+        $categoryId = $resolved['extension'] === 'com_content' ? ($item->catid ?? null) : null;
+        $categoryId = $categoryId !== null ? (int) $categoryId : null;
+
+        $rules = ScopeEvaluator::decodeRules((string) ($commentContext->params ?? ''));
+        $scopeMode = (string) ($commentContext->scope_mode ?? 'all');
+
+        if (!ScopeEvaluator::isItemIncluded($scopeMode, $rules, (int) $item->id, $categoryId)) {
             return;
         }
 
