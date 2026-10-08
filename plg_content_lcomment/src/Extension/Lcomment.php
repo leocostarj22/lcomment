@@ -67,6 +67,7 @@ final class Lcomment extends CMSPlugin implements SubscriberInterface
         $commentIds = array_map(static fn ($comment) => (int) $comment->id, $items);
         $reactions = $model->getReactionsFor($commentIds);
         $votes = $model->getVotesFor($commentIds);
+        $authorNames = $model->getAuthorNames(array_map(static fn ($comment) => $comment->user_id, $items));
         $returnUrl = Uri::getInstance()->toString();
 
         $app->getLanguage()->load('com_lcomment', \JPATH_SITE);
@@ -90,6 +91,7 @@ final class Lcomment extends CMSPlugin implements SubscriberInterface
                 'items' => $items,
                 'reactions' => $reactions,
                 'votes' => $votes,
+                'authorNames' => $authorNames,
                 'returnUrl' => $returnUrl,
             ],
             \JPATH_ROOT . '/components/com_lcomment/layouts'

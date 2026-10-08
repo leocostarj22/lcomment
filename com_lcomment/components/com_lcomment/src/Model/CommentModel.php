@@ -229,4 +229,37 @@ final class CommentModel extends BaseDatabaseModel
 
         return $result;
     }
+
+    /**
+     * @param array<int, int|null> $userIds
+     * @return array<int, string>
+     */
+    public function getAuthorNames(array $userIds): array
+    {
+        $userIds = array_values(array_unique(array_filter(
+            $userIds,
+            static fn ($id) => $id !== null && (int) $id > 0
+        )));
+
+        if ($userIds === []) {
+            return [];
+        }
+
+        $db = $this->getDatabase();
+
+        $query = $db->getQuery(true)
+            ->select([$db->quoteName('id'), $db->quoteName('name')])
+            ->from($db->quoteName('#__users'))
+            ->whereIn($db->quoteName('id'), array_map('intval', $userIds));
+
+        $db->setQuery($query);
+
+        $result = [];
+
+        foreach ($db->loadObjectList() as $row) {
+            $result[(int) $row->id] = (string) $row->name;
+        }
+
+        return $result;
+    }
 }

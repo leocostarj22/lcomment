@@ -34,13 +34,16 @@
 }
 
 .lcomment-reactions {
-    display: flex;
+    display: flex !important;
     flex-wrap: wrap;
+    align-items: center;
     gap: 0.25rem;
     margin-top: 0.5rem;
 }
 
 .lcomment-reaction-form {
+    display: inline-flex !important;
+    width: auto !important;
     margin: 0;
 }
 
@@ -65,12 +68,16 @@
 }
 
 .lcomment-votes {
-    display: flex;
+    display: flex !important;
+    flex-wrap: wrap;
+    align-items: center;
     gap: 0.5rem;
     margin-top: 0.25rem;
 }
 
 .lcomment-vote-form {
+    display: inline-flex !important;
+    width: auto !important;
     margin: 0;
 }
 

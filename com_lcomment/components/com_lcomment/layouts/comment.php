@@ -18,6 +18,7 @@ use Lcsilva\Component\Lcomment\Administrator\Service\VoteToggle;
  * @var array  $items
  * @var array  $reactions
  * @var array  $votes
+ * @var array  $authorNames
  * @var string $returnUrl
  *
  * Overridable via templates/<template>/html/layouts/comment.php
@@ -146,15 +147,16 @@ $renderVotes = function (int $commentId) use ($returnUrl, $votes, $voteLabel): v
     <?php
 };
 
-$renderNode = function (array $node, int $depth) use (&$renderNode, $renderForm, $renderReactions, $renderVotes, $prefillParentId, $prefillText): void {
+$renderNode = function (array $node, int $depth) use (&$renderNode, $renderForm, $renderReactions, $renderVotes, $prefillParentId, $prefillText, $authorNames): void {
     $comment = $node['comment'];
     $commentId = (int) $comment->id;
     $depthClass = 'lcomment-depth-' . min($depth, 5);
     $isReplyOpen = $prefillParentId === $commentId;
+    $authorName = $comment->guest_name ?: ($authorNames[(int) $comment->user_id] ?? ('#' . (int) $comment->user_id));
     ?>
     <li class="lcomment-item <?php echo $depthClass; ?>" data-id="<?php echo $commentId; ?>">
         <strong>
-            <?php echo htmlspecialchars($comment->guest_name ?: ('#' . (int) $comment->user_id)); ?>
+            <?php echo htmlspecialchars($authorName); ?>
         </strong>
         <?php if ((int) $comment->state === 0) : ?>
             <span class="badge bg-warning"><?php echo Text::_('COM_LCOMMENT_LIST_PENDING_BADGE'); ?></span>
