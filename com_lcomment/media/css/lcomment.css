@@ -37,6 +37,7 @@
     display: flex !important;
     flex-wrap: wrap;
     align-items: center;
+    justify-content: flex-end;
     gap: 0.25rem;
     margin-top: 0.5rem;
 }
@@ -71,8 +72,9 @@
     display: flex !important;
     flex-wrap: wrap;
     align-items: center;
+    justify-content: flex-end;
     gap: 0.5rem;
-    margin-top: 0.25rem;
+    margin-top: 0.15rem;
 }
 
 .lcomment-vote-form {
