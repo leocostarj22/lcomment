@@ -28,6 +28,10 @@ final class CommentController extends BaseController
         $extension = $input->getCmd('extension', '');
         $view = $input->getCmd('view', '');
         $itemId = $input->getInt('item_id', 0);
+        // getInt() already returns 0 for a missing/blank/non-numeric value —
+        // an absent parent_id must default to a top-level comment, never
+        // block the submission.
+        $parentId = $input->getInt('parent_id', 0);
         $text = (string) $input->get('comment_text', '', 'RAW');
         $guestName = $input->getString('guest_name', '');
         $guestEmail = $input->getString('guest_email', '');
@@ -43,6 +47,7 @@ final class CommentController extends BaseController
         $rules = $context !== null ? ScopeEvaluator::decodeRules((string) ($context->params ?? '')) : [];
         $scopeMode = $context !== null ? (string) ($context->scope_mode ?? 'all') : 'all';
         $itemIncluded = ScopeEvaluator::isItemIncluded($scopeMode, $rules, $itemId, $categoryId);
+        $parentValid = $parentId === 0 || $model->parentBelongsToItem($parentId, $extension, $view, $itemId);
 
         $user = $app->getIdentity();
         $params = ComponentHelper::getParams('com_lcomment');
@@ -58,6 +63,7 @@ final class CommentController extends BaseController
             guestName: $guestName,
             guestEmail: $guestEmail,
             itemIncluded: $itemIncluded,
+            parentValid: $parentValid,
         ));
 
         if (!$policyResult->accepted) {
@@ -65,6 +71,7 @@ final class CommentController extends BaseController
                 'text' => $text,
                 'guest_name' => $guestName,
                 'guest_email' => $guestEmail,
+                'parent_id' => $parentId,
             ]);
 
             foreach ($policyResult->errors as $error) {
@@ -81,6 +88,7 @@ final class CommentController extends BaseController
         $table->extension = $extension;
         $table->view = $view;
         $table->item_id = $itemId;
+        $table->parent_id = $parentId;
         $table->comment_text = $policyResult->normalizedText;
         $table->state = $policyResult->initialState;
         $table->language = $app->getLanguage()->getTag();
@@ -98,6 +106,7 @@ final class CommentController extends BaseController
                 'text' => $text,
                 'guest_name' => $guestName,
                 'guest_email' => $guestEmail,
+                'parent_id' => $parentId,
             ]);
             $app->enqueueMessage($table->getError(), 'error');
             $app->redirect($returnUrl ?: 'index.php');

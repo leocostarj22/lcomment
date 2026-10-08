@@ -83,4 +83,30 @@ final class CommentModel extends BaseDatabaseModel
 
         return $catid !== null ? (int) $catid : null;
     }
+
+    public function parentBelongsToItem(int $parentId, string $extension, string $view, int $itemId): bool
+    {
+        $db = $this->getDatabase();
+
+        // Only excludes trashed (-2). A pending (state = 0) parent on the
+        // same item is a valid reply target — moderation state is not a
+        // reason to reject the reply, only trash/cross-item is. See the
+        // spec's "pending parent" acceptance criterion.
+        $query = $db->getQuery(true)
+            ->select('COUNT(*)')
+            ->from($db->quoteName('#__lcomment_comments'))
+            ->where($db->quoteName('id') . ' = :parentId')
+            ->where($db->quoteName('extension') . ' = :extension')
+            ->where($db->quoteName('view') . ' = :view')
+            ->where($db->quoteName('item_id') . ' = :itemId')
+            ->where($db->quoteName('state') . ' != -2')
+            ->bind(':parentId', $parentId, ParameterType::INTEGER)
+            ->bind(':extension', $extension, ParameterType::STRING)
+            ->bind(':view', $view, ParameterType::STRING)
+            ->bind(':itemId', $itemId, ParameterType::INTEGER);
+
+        $db->setQuery($query);
+
+        return (int) $db->loadResult() > 0;
+    }
 }
