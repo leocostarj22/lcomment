@@ -38,5 +38,7 @@ CREATE TABLE IF NOT EXISTS `#__lcomment_reactions` (
     `reaction_type` VARCHAR(20) NOT NULL,
     `created` DATETIME NOT NULL,
     PRIMARY KEY (`id`),
-    KEY `idx_comment_id` (`comment_id`)
+    KEY `idx_comment_id` (`comment_id`),
+    UNIQUE KEY `idx_user_comment` (`comment_id`, `user_id`),
+    UNIQUE KEY `idx_guest_comment` (`comment_id`, `guest_ip`, `guest_session_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

@@ -5,6 +5,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const container = form.closest('.lcomment-reactions');
 
+            // Guard the whole container, not just this form's own button:
+            // a rapid like -> love click (two different forms) races the
+            // same identity+comment row just as much as a double-click on
+            // the same button does. One request in flight per comment at
+            // a time avoids firing overlapping requests that could both
+            // see "no existing reaction" before either one's write lands.
+            if (container && container.dataset.pending === '1') {
+                return;
+            }
+
+            if (container) {
+                container.dataset.pending = '1';
+            }
+
             fetch(form.action, {
                 method: 'POST',
                 credentials: 'same-origin',
@@ -25,6 +39,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Network error or rejected request: leave the DOM as it
                     // was and let the user retry — the server is still the
                     // source of truth, nothing is guessed on failure here.
+                })
+                .finally(() => {
+                    if (container) {
+                        delete container.dataset.pending;
+                    }
                 });
         });
     });

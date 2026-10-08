@@ -11,6 +11,7 @@ use Joomla\CMS\Language\Text;
 use Joomla\CMS\MVC\Controller\BaseController;
 use Joomla\CMS\Session\Session;
 use Joomla\Database\DatabaseInterface;
+use Joomla\Database\Exception\ExecutionFailureException;
 use Joomla\Database\ParameterType;
 use Lcsilva\Component\Lcomment\Administrator\Service\ReactionToggle;
 
@@ -193,6 +194,24 @@ final class ReactionController extends BaseController
             ->bind(':created', $created, ParameterType::STRING);
 
         $db->setQuery($query);
-        $db->execute();
+
+        try {
+            $db->execute();
+        } catch (ExecutionFailureException $exception) {
+            // A concurrent request for the same identity on the same
+            // comment (e.g. a rapid double-click, or two overlapping
+            // requests from different tabs) can race this INSERT against
+            // another one that wins first, tripping the unique keys on
+            // (comment_id, user_id) and
+            // (comment_id, guest_ip, guest_session_id) — those are what
+            // actually guarantee "never two rows for the same identity".
+            // If a row for this identity exists now, that race is exactly
+            // what happened and there is nothing left to do; any other
+            // failure (a real DB/connectivity problem) still has no
+            // matching row, so it is rethrown rather than hidden.
+            if ($this->findExisting($db, $commentId, $userId, $guestIp, $guestSessionId) === []) {
+                throw $exception;
+            }
+        }
     }
 }
