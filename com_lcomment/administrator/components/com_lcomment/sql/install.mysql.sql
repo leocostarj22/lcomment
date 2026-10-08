@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS `#__lcomment_contexts` (
     `view` VARCHAR(100) NOT NULL,
     `published` TINYINT NOT NULL DEFAULT 1,
     `moderation` TINYINT NOT NULL DEFAULT 1,
+    `scope_mode` VARCHAR(20) NOT NULL DEFAULT 'all',
     `params` TEXT NULL,
     PRIMARY KEY (`id`),
     UNIQUE KEY `idx_extension_view` (`extension`, `view`)

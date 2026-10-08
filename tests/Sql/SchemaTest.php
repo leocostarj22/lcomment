@@ -46,6 +46,25 @@ final class SchemaTest extends TestCase
         }
     }
 
+    public function testInstallSqlContextsTableHasScopeModeColumn(): void
+    {
+        $sql = file_get_contents(self::SQL_DIR . '/install.mysql.sql');
+
+        self::assertMatchesRegularExpression(
+            '/`scope_mode`\s+VARCHAR\(20\)\s+NOT NULL\s+DEFAULT \'all\'/',
+            $sql,
+            'Expected `scope_mode` column with default \'all\' in #__lcomment_contexts'
+        );
+    }
+
+    public function testUpdateScriptAddsScopeModeColumn(): void
+    {
+        $sql = file_get_contents(self::SQL_DIR . '/updates/mysql/0.2.0.sql');
+
+        self::assertStringContainsString('ALTER TABLE `#__lcomment_contexts`', $sql);
+        self::assertStringContainsString('ADD COLUMN `scope_mode`', $sql);
+    }
+
     public function testUninstallSqlDropsBothTables(): void
     {
         $sql = file_get_contents(self::SQL_DIR . '/uninstall.mysql.sql');
