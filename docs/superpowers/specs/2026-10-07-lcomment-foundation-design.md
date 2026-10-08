@@ -13,7 +13,9 @@ com seu próprio spec → plano → implementação:
 1. **Fundação** (este documento) — estrutura do pacote, schema de BD, integração
    universal via eventos de conteúdo, CRUD básico de comentários, admin mínimo.
 2. **Engajamento** — reações, avaliações, aninhamento real de respostas,
-   assinaturas/notificações, visitante vs. registrado (regras avançadas).
+   assinaturas/notificações, visitante vs. registrado (regras avançadas),
+   escopo granular de contexto (incluir/excluir comentários por item
+   específico e, para `com_content`, por categoria).
 3. **Moderação & Segurança** — ACL granular por grupo, workflow de publicação,
    blacklist, denúncias, anti-spam/captcha, anti-flood, filtro de palavrões.
 4. **Apresentação & Conteúdo** — BBCode, emojis/figurinhas, templates/temas e
