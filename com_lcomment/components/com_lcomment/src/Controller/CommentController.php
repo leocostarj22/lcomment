@@ -11,6 +11,7 @@ use Joomla\CMS\Factory;
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\MVC\Controller\BaseController;
 use Joomla\CMS\Session\Session;
+use Joomla\CMS\Uri\Uri;
 use Lcsilva\Component\Lcomment\Administrator\Service\ReplyNotifier;
 use Lcsilva\Component\Lcomment\Administrator\Service\ScopeEvaluator;
 use Lcsilva\Component\Lcomment\Administrator\Service\SubmissionPolicy;
@@ -90,7 +91,13 @@ final class CommentController extends BaseController
         $table->view = $view;
         $table->item_id = $itemId;
         $table->parent_id = $parentId;
-        $table->item_url = $returnUrl;
+        // Only an internal URL within the DB column's length is kept for
+        // later use in a reply-notification email (ReplyNotifier) — a
+        // forged external return URL must never be relayed to a third
+        // party from the site's own notification sender, and a URL over
+        // 500 characters (e.g. one with marketing query params) must
+        // never block the comment from being stored.
+        $table->item_url = (Uri::isInternal($returnUrl) && \strlen($returnUrl) <= 500) ? $returnUrl : null;
         $table->comment_text = $policyResult->normalizedText;
         $table->state = $policyResult->initialState;
         $table->language = $app->getLanguage()->getTag();

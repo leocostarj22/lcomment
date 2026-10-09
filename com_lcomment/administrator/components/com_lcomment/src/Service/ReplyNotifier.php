@@ -8,7 +8,7 @@ namespace Lcsilva\Component\Lcomment\Administrator\Service;
 
 use Joomla\CMS\Component\ComponentHelper;
 use Joomla\CMS\Factory;
-use Joomla\CMS\Language\Text;
+use Joomla\CMS\Language\LanguageFactoryInterface;
 use Joomla\Database\DatabaseInterface;
 use Joomla\Database\Exception\ExecutionFailureException;
 use Joomla\Database\ParameterType;
@@ -17,11 +17,21 @@ use Joomla\Database\ParameterType;
  * Enqueues a reply notification — never sends anything itself. Sending
  * is NotificationQueueProcessor's job alone.
  *
- * Joomla APIs used here were verified against real joomla-cms 5.4-dev
- * source before this plan was written: Factory::getLanguage() is
- * deprecated in Joomla 6 (use Factory::getApplication()->getLanguage()
- * instead); $app->get('language', 'en-GB') is the real site default
- * language tag (SiteApplication).
+ * notifyIfNeeded() runs from both the site app (reply published
+ * immediately) and the admin app (reply published later by a
+ * moderator) — $app->get('language') is the ACTIVE application's own
+ * language (the admin user's backend language preference when run
+ * from the admin app), never the site's configured front-end default,
+ * verified against real joomla-cms 6.1-dev source
+ * (CMSApplication::initialiseApp(), AdministratorApplication). The
+ * real site default is ComponentHelper::getParams('com_languages')->get('site'),
+ * which SiteApplication::detectLanguage() itself falls back to. A
+ * fresh, isolated Language instance is built from that tag — the
+ * shared $app->getLanguage() singleton is never touched, since the
+ * site .ini and admin .ini share several keys (e.g.
+ * COM_LCOMMENT_SAVE_SUCCESS_PUBLISHED) and reloading it here would
+ * change the flash message language for whatever request is already
+ * running.
  */
 final class ReplyNotifier
 {
@@ -70,14 +80,9 @@ final class ReplyNotifier
             return;
         }
 
-        // Runs from both the site and the admin application — the admin
-        // backend's own active language is not necessarily the site's
-        // default, so the language used to compose the email text must
-        // be forced explicitly rather than left to whatever is already
-        // loaded. Factory::getLanguage() is deprecated in Joomla 6.
-        $app = Factory::getApplication();
-        $siteLanguageTag = $app->get('language', 'en-GB');
-        $app->getLanguage()->load('com_lcomment', \JPATH_SITE, $siteLanguageTag, true);
+        $siteLanguageTag = (string) ComponentHelper::getParams('com_languages')->get('site', 'en-GB');
+        $language = Factory::getContainer()->get(LanguageFactoryInterface::class)->createLanguage($siteLanguageTag);
+        $language->load('com_lcomment', \JPATH_SITE, $siteLanguageTag, true);
 
         $replyAuthorName = $reply->guest_name !== null && $reply->guest_name !== ''
             ? (string) $reply->guest_name
@@ -93,8 +98,8 @@ final class ReplyNotifier
         $url = (string) ($reply->item_url ?? '');
         $siteName = (string) Factory::getApplication()->get('sitename', '');
 
-        $subject = Text::sprintf('COM_LCOMMENT_NOTIFICATION_SUBJECT', $siteName);
-        $body = Text::sprintf('COM_LCOMMENT_NOTIFICATION_INTRO', $replyAuthorName)
+        $subject = \sprintf($language->_('COM_LCOMMENT_NOTIFICATION_SUBJECT'), $siteName);
+        $body = \sprintf($language->_('COM_LCOMMENT_NOTIFICATION_INTRO'), $replyAuthorName)
             . "\n\n" . $excerpt . "\n\n" . $url;
 
         self::enqueue($db, $commentId, (int) $recipient['id'], $subject, $body, $url);

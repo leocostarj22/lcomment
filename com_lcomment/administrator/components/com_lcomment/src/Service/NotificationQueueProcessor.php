@@ -34,15 +34,23 @@ final class NotificationQueueProcessor
 
         $query = $db->getQuery(true)
             ->select([
-                $db->quoteName('id'),
-                $db->quoteName('user_id'),
-                $db->quoteName('subject'),
-                $db->quoteName('body'),
+                $db->quoteName('n.id'),
+                $db->quoteName('n.user_id'),
+                $db->quoteName('n.subject'),
+                $db->quoteName('n.body'),
             ])
-            ->from($db->quoteName('#__lcomment_notifications'))
-            ->where($db->quoteName('sent_at') . ' IS NULL')
-            ->where($db->quoteName('attempts') . ' < :maxAttempts')
-            ->order($db->quoteName('created') . ' ASC')
+            ->from($db->quoteName('#__lcomment_notifications', 'n'))
+            ->innerJoin(
+                $db->quoteName('#__lcomment_comments', 'c') . ' ON ' . $db->quoteName('c.id') . ' = ' . $db->quoteName('n.comment_id')
+            )
+            // A reply can be unpublished/trashed after being enqueued but
+            // before this runs (e.g. a moderator removing spam) — a
+            // notification must never go out for a comment that is no
+            // longer published.
+            ->where($db->quoteName('c.state') . ' = 1')
+            ->where($db->quoteName('n.sent_at') . ' IS NULL')
+            ->where($db->quoteName('n.attempts') . ' < :maxAttempts')
+            ->order($db->quoteName('n.created') . ' ASC')
             ->setLimit($limit)
             ->bind(':maxAttempts', $maxAttempts, ParameterType::INTEGER);
 

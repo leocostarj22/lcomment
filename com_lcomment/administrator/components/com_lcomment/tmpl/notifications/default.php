@@ -14,6 +14,7 @@ $listDirn = $this->state->get('list.direction', 'DESC');
     <table class="table">
         <thead>
             <tr>
+                <th><?php echo HTMLHelper::_('grid.checkall'); ?></th>
                 <th><?php echo Text::_('COM_LCOMMENT_NOTIFICATIONS_RECIPIENT_LABEL'); ?></th>
                 <th><?php echo Text::_('COM_LCOMMENT_NOTIFICATIONS_SUBJECT_LABEL'); ?></th>
                 <th><?php echo Text::_('COM_LCOMMENT_NOTIFICATIONS_ATTEMPTS_LABEL'); ?></th>
@@ -22,8 +23,9 @@ $listDirn = $this->state->get('list.direction', 'DESC');
             </tr>
         </thead>
         <tbody>
-        <?php foreach ($this->items as $item) : ?>
+        <?php foreach ($this->items as $i => $item) : ?>
             <tr>
+                <td><?php echo HTMLHelper::_('grid.id', $i, $item->id); ?></td>
                 <td><?php echo htmlspecialchars((string) ($item->recipient_name ?: $item->recipient_email)); ?></td>
                 <td><?php echo htmlspecialchars((string) $item->subject); ?></td>
                 <td><?php echo (int) $item->attempts; ?></td>

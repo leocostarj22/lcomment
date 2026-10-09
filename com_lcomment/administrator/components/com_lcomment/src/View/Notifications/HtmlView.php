@@ -24,6 +24,7 @@ final class HtmlView extends BaseHtmlView
 
         ToolbarHelper::title(Text::_('COM_LCOMMENT_NOTIFICATIONS_TITLE'));
         ToolbarHelper::custom('notifications.process', 'envelope', '', 'COM_LCOMMENT_NOTIFICATIONS_PROCESS_BUTTON', false);
+        ToolbarHelper::deleteList('', 'notifications.delete');
         ToolbarHelper::preferences('com_lcomment');
 
         parent::display($tpl);
