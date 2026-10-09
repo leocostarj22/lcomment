@@ -26,6 +26,7 @@
         <submenu>
             <menu view="contexts">COM_LCOMMENT_MENU_CONTEXTS</menu>
             <menu view="comments">COM_LCOMMENT_MENU_COMMENTS</menu>
+            <menu view="notifications">COM_LCOMMENT_MENU_NOTIFICATIONS</menu>
         </submenu>
         <files folder="administrator/components/com_lcomment">
             <folder>src</folder>
