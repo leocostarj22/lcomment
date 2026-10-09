@@ -6,6 +6,7 @@ namespace Lcsilva\Plugin\Content\Lcomment\Extension;
 
 \defined('_JEXEC') or die;
 
+use Joomla\CMS\Component\ComponentHelper;
 use Joomla\CMS\Event\Content\AfterDisplayEvent;
 use Joomla\CMS\Factory;
 use Joomla\CMS\Layout\LayoutHelper;
@@ -65,8 +66,15 @@ final class Lcomment extends CMSPlugin implements SubscriberInterface
         $itemId = (int) $item->id;
         $items = $model->getItemsFor($extension, $view, $itemId);
         $commentIds = array_map(static fn ($comment) => (int) $comment->id, $items);
-        $reactions = $model->getReactionsFor($commentIds);
-        $votes = $model->getVotesFor($commentIds);
+
+        $params = ComponentHelper::getParams('com_lcomment');
+        $reactionsEnabled = (bool) $params->get('enable_reactions', 1);
+        $votesEnabled = (bool) $params->get('enable_votes', 1);
+
+        // Skip the query entirely when the feature is off, not just the
+        // display — no point aggregating data nobody can see or act on.
+        $reactions = $reactionsEnabled ? $model->getReactionsFor($commentIds) : [];
+        $votes = $votesEnabled ? $model->getVotesFor($commentIds) : [];
         $authorNames = $model->getAuthorNames(array_map(static fn ($comment) => $comment->user_id, $items));
         $returnUrl = Uri::getInstance()->toString();
 
@@ -78,9 +86,15 @@ final class Lcomment extends CMSPlugin implements SubscriberInterface
         // never auto-loaded — register it explicitly before using it.
         $webAssetManager->getRegistry()->addExtensionRegistryFile('com_lcomment');
         $webAssetManager->useStyle('com_lcomment.comments')
-            ->useScript('com_lcomment.comments')
-            ->useScript('com_lcomment.reactions')
-            ->useScript('com_lcomment.votes');
+            ->useScript('com_lcomment.comments');
+
+        if ($reactionsEnabled) {
+            $webAssetManager->useScript('com_lcomment.reactions');
+        }
+
+        if ($votesEnabled) {
+            $webAssetManager->useScript('com_lcomment.votes');
+        }
 
         $html = LayoutHelper::render(
             'comment',
@@ -91,6 +105,8 @@ final class Lcomment extends CMSPlugin implements SubscriberInterface
                 'items' => $items,
                 'reactions' => $reactions,
                 'votes' => $votes,
+                'reactionsEnabled' => $reactionsEnabled,
+                'votesEnabled' => $votesEnabled,
                 'authorNames' => $authorNames,
                 'returnUrl' => $returnUrl,
             ],
@@ -112,20 +128,26 @@ final class Lcomment extends CMSPlugin implements SubscriberInterface
 
         if (!$assetsInlined) {
             $assetsInlined = true;
-            $html = self::inlineAssetTags() . $html;
+            $html = self::inlineAssetTags($reactionsEnabled, $votesEnabled) . $html;
         }
 
         $event->addResult($html);
     }
 
-    private static function inlineAssetTags(): string
+    private static function inlineAssetTags(bool $reactionsEnabled, bool $votesEnabled): string
     {
         $files = [
             'css/lcomment.css' => 'style',
             'js/lcomment.js' => 'script',
-            'js/lcomment-reactions.js' => 'script',
-            'js/lcomment-votes.js' => 'script',
         ];
+
+        if ($reactionsEnabled) {
+            $files['js/lcomment-reactions.js'] = 'script';
+        }
+
+        if ($votesEnabled) {
+            $files['js/lcomment-votes.js'] = 'script';
+        }
 
         $base = Uri::root() . 'media/com_lcomment/';
         $tags = '';

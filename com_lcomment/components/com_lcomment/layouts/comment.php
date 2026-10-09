@@ -18,6 +18,8 @@ use Lcsilva\Component\Lcomment\Administrator\Service\VoteToggle;
  * @var array  $items
  * @var array  $reactions
  * @var array  $votes
+ * @var bool   $reactionsEnabled
+ * @var bool   $votesEnabled
  * @var array  $authorNames
  * @var string $returnUrl
  *
@@ -147,7 +149,7 @@ $renderVotes = function (int $commentId) use ($returnUrl, $votes, $voteLabel): v
     <?php
 };
 
-$renderNode = function (array $node, int $depth) use (&$renderNode, $renderForm, $renderReactions, $renderVotes, $prefillParentId, $prefillText, $authorNames): void {
+$renderNode = function (array $node, int $depth) use (&$renderNode, $renderForm, $renderReactions, $renderVotes, $prefillParentId, $prefillText, $authorNames, $reactionsEnabled, $votesEnabled): void {
     $comment = $node['comment'];
     $commentId = (int) $comment->id;
     $depthClass = 'lcomment-depth-' . min($depth, 5);
@@ -163,8 +165,12 @@ $renderNode = function (array $node, int $depth) use (&$renderNode, $renderForm,
         <?php endif; ?>
         <p><?php echo htmlspecialchars((string) $comment->comment_text); ?></p>
 
-        <?php $renderReactions($commentId); ?>
-        <?php $renderVotes($commentId); ?>
+        <?php if ($reactionsEnabled) : ?>
+            <?php $renderReactions($commentId); ?>
+        <?php endif; ?>
+        <?php if ($votesEnabled) : ?>
+            <?php $renderVotes($commentId); ?>
+        <?php endif; ?>
 
         <details class="lcomment-reply"<?php echo $isReplyOpen ? ' open' : ''; ?>>
             <summary><?php echo Text::_('COM_LCOMMENT_REPLY_LABEL'); ?></summary>

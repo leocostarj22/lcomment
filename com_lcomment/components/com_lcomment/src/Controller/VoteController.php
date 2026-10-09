@@ -6,6 +6,7 @@ namespace Lcsilva\Component\Lcomment\Site\Controller;
 
 \defined('_JEXEC') or die;
 
+use Joomla\CMS\Component\ComponentHelper;
 use Joomla\CMS\Factory;
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\MVC\Controller\BaseController;
@@ -25,6 +26,12 @@ final class VoteController extends BaseController
         $input = $app->getInput();
         $isAjax = $input->server->getString('HTTP_X_LCOMMENT_AJAX', '') !== '';
         $returnUrl = base64_decode($input->getBase64('return', ''));
+
+        $params = ComponentHelper::getParams('com_lcomment');
+
+        if (!(bool) $params->get('enable_votes', 1)) {
+            return $this->fail($app, $isAjax, $returnUrl, 'COM_LCOMMENT_ERROR_VOTES_DISABLED');
+        }
 
         $commentId = $input->getInt('comment_id', 0);
         $voteType = $input->getCmd('vote_type', '');
