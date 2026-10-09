@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS `#__lcomment_comments` (
     `state` TINYINT NOT NULL DEFAULT 0,
     `language` CHAR(7) NOT NULL DEFAULT '*',
     `ip` VARCHAR(45) NULL,
+    `item_url` VARCHAR(500) NULL,
     `created` DATETIME NOT NULL,
     `modified` DATETIME NULL,
     PRIMARY KEY (`id`),
@@ -55,4 +56,18 @@ CREATE TABLE IF NOT EXISTS `#__lcomment_votes` (
     KEY `idx_comment_id` (`comment_id`),
     UNIQUE KEY `idx_user_comment` (`comment_id`, `user_id`),
     UNIQUE KEY `idx_guest_comment` (`comment_id`, `guest_ip`, `guest_session_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `#__lcomment_notifications` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `comment_id` INT UNSIGNED NOT NULL,
+    `user_id` INT UNSIGNED NOT NULL,
+    `subject` VARCHAR(255) NOT NULL,
+    `body` TEXT NOT NULL,
+    `url` VARCHAR(500) NULL,
+    `attempts` TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    `created` DATETIME NOT NULL,
+    `sent_at` DATETIME NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `idx_comment` (`comment_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
