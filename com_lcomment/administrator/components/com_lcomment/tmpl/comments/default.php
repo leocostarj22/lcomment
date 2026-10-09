@@ -36,8 +36,7 @@ $listDirn = $this->state->get('list.direction', 'DESC');
             <tr>
                 <td></td>
                 <th><?php echo HTMLHelper::_('grid.checkall'); ?></th>
-                <th><?php echo Text::_('COM_LCOMMENT_CONTEXT_EXTENSION_LABEL'); ?></th>
-                <th><?php echo Text::_('COM_LCOMMENT_CONTEXT_VIEW_LABEL'); ?></th>
+                <th><?php echo Text::_('COM_LCOMMENT_COMMENTS_PAGE_LABEL'); ?></th>
                 <th><?php echo Text::_('COM_LCOMMENT_COMMENTS_AUTHOR_LABEL'); ?></th>
                 <th><?php echo Text::_('COM_LCOMMENT_COMMENTS_TEXT_LABEL'); ?></th>
                 <th><?php echo Text::_('COM_LCOMMENT_CONTEXT_PUBLISHED_LABEL'); ?></th>
@@ -48,8 +47,14 @@ $listDirn = $this->state->get('list.direction', 'DESC');
             <tr>
                 <td></td>
                 <td><?php echo HTMLHelper::_('grid.id', $i, $item->id); ?></td>
-                <td><?php echo htmlspecialchars($item->extension); ?></td>
-                <td><?php echo htmlspecialchars($item->view); ?></td>
+                <td>
+                    <?php $pageLabel = htmlspecialchars($item->extension . ' / ' . $item->view); ?>
+                    <?php if (!empty($item->item_url)) : ?>
+                        <a href="<?php echo htmlspecialchars((string) $item->item_url); ?>" target="_blank" rel="noopener"><?php echo $pageLabel; ?></a>
+                    <?php else : ?>
+                        <?php echo $pageLabel; ?>
+                    <?php endif; ?>
+                </td>
                 <td><?php echo htmlspecialchars((string) ($item->guest_name ?: ($item->author_name ?: ('#' . (int) $item->user_id)))); ?></td>
                 <td><?php echo htmlspecialchars(mb_strimwidth((string) $item->comment_text, 0, 80, '…')); ?></td>
                 <td>
