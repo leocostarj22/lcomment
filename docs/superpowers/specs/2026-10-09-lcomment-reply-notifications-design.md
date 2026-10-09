@@ -168,13 +168,32 @@ lógica de decisão:
 2. Busca o comentário (`$commentId`) e, se tiver `parent_id`, busca o
    comentário-pai.
 3. Chama `ReplyNotificationPolicy::shouldNotify(...)`.
-4. Se `true`: busca o e-mail e nome do autor do pai, compõe o assunto e
-   o corpo do e-mail (mesmo formato de conteúdo da versão anterior —
-   nome de quem respondeu, excerto de 200 caracteres do texto da
+4. Se `true`: **carrega explicitamente o idioma do site**
+   (`Factory::getApplication()->getLanguage()->load('com_lcomment',
+   \JPATH_SITE, Factory::getApplication()->get('language', 'en-GB'),
+   true)` — `Factory::getLanguage()` está *deprecated* no Joomla 6,
+   confirmado no código-fonte real; `$app->get('language', 'en-GB')` é a
+   forma real de obter o idioma padrão configurado do site, visto em
+   `SiteApplication::initialiseApp()` no mesmo branch — não o idioma do
+   contexto onde o gatilho correu) antes de compor o assunto/corpo —
+   necessário porque
+   este serviço corre tanto no lado do site quanto no admin, e o idioma
+   ativo da aplicação admin não é necessariamente o idioma padrão do
+   site; sem isto, uma notificação enfileirada a partir da publicação no
+   admin poderia sair com chaves de idioma por traduzir em vez de texto,
+   mesmo a regra "sempre o idioma do site" já decidida. Depois busca o
+   e-mail e nome do autor do pai, compõe o assunto e o corpo do e-mail
+   (nome de quem respondeu, excerto de 200 caracteres do texto da
    resposta, link), e **insere uma linha** em
    `#__lcomment_notifications` — `INSERT` simples via
    `DatabaseInterface`, mesmo estilo já usado em
-   `ReactionController::applyDecision()`. Não envia nada diretamente.
+   `ReactionController::applyDecision()`, dentro de um `try`/`catch` de
+   `ExecutionFailureException` que trata uma violação da `UNIQUE KEY`
+   como no-op (mesma disciplina já corrigida nas reações depois da
+   revisão final da Fase 2c — aqui o risco real de corrida é baixo, já
+   que os dois pontos de disparo nunca disparam para o mesmo
+   `comment_id` ao mesmo tempo, mas a defesa fica de qualquer forma, sem
+   custo extra). Não envia nada diretamente.
 
 ## `NotificationQueueProcessor` (processa a fila — enviar de verdade)
 
@@ -189,8 +208,9 @@ usada em `ReplyNotifier`:
 
 1. Busca até `$limit` linhas de `#__lcomment_notifications` com
    `sent_at IS NULL` e `attempts < 3`, ordenadas por `created ASC`.
-2. Para cada linha: tenta enviar via `Factory::getMailer()` (`setSender`
-   com a configuração global do site, `addRecipient` com o e-mail já
+2. Para cada linha: tenta enviar via `Factory::getMailer()` (já devolve
+   uma cópia pré-configurada com o remetente global do site, não precisa
+   de chamar `setSender()` de novo — só `addRecipient` com o e-mail já
    resolvido no momento de enfileirar — não precisa de voltar a
    consultar `#__users`, `setSubject`/`setBody` com o conteúdo já
    pronto, `isHtml(false)`, `Send()`), dentro de `try`/`catch`.
@@ -208,7 +228,12 @@ usada em `ReplyNotifier`:
 
 Mesmo padrão de `CommentsController`/`CommentModel`
 (`AdminController`/`AdminModel`, sem formulário de edição — só
-listagem e ações de lista):
+listagem e ações de lista). Ganha uma entrada no submenu do admin em
+`com_lcomment.xml` (`<submenu><menu view="notifications">`), mesmo
+padrão das entradas já existentes para Contexts/Comments — sem isso a
+view fica inacessível pela navegação normal do admin (lição já no
+histórico do projeto: "admin sys.ini needing the submenu labels" na
+Fase 1).
 
 - Listagem: destinatário, assunto, tentativas, criado em, enviado em
   (vazio = pendente).
