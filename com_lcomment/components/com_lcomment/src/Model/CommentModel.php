@@ -34,7 +34,16 @@ final class CommentModel extends BaseDatabaseModel
     {
         $db = $this->getDatabase();
         $user = \Joomla\CMS\Factory::getApplication()->getIdentity();
+        $viewerId = ($user && $user->id > 0) ? (int) $user->id : null;
 
+        // Fetch every state for this item — a trashed comment's own
+        // visibility now depends on whether it has a visible descendant,
+        // possibly several trashed levels down (e.g. a published reply
+        // under a trashed reply under a trashed top-level comment), which
+        // cannot be expressed as a fixed-depth SQL EXISTS. The final
+        // filter below is still exactly as strict as before for every
+        // directly-visible row; only trashed rows get the extra,
+        // recursively-computed allowance.
         $query = $db->getQuery(true)
             ->select('*')
             ->from($db->quoteName('#__lcomment_comments'))
@@ -46,37 +55,70 @@ final class CommentModel extends BaseDatabaseModel
             ->bind(':itemId', $itemId, ParameterType::INTEGER)
             ->order($db->quoteName('created') . ' ASC');
 
-        if ($user && $user->id > 0) {
-            $query->extendWhere(
-                'AND',
-                [
-                    $db->quoteName('state') . ' = 1',
-                    '(' . $db->quoteName('state') . ' = 0 AND ' . $db->quoteName('user_id') . ' = :userId)',
-                    '(' . $db->quoteName('state') . ' = -2 AND ' . self::trashedHasSurvivingReplySql($db) . ')',
-                ],
-                'OR'
-            )->bind(':userId', $user->id, ParameterType::INTEGER);
-        } else {
-            $query->extendWhere(
-                'AND',
-                [
-                    $db->quoteName('state') . ' = 1',
-                    '(' . $db->quoteName('state') . ' = -2 AND ' . self::trashedHasSurvivingReplySql($db) . ')',
-                ],
-                'OR'
-            );
-        }
-
         $db->setQuery($query);
 
-        return $db->loadObjectList() ?: [];
-    }
+        $all = $db->loadObjectList() ?: [];
 
-    private static function trashedHasSurvivingReplySql(\Joomla\Database\DatabaseInterface $db): string
-    {
-        return 'EXISTS (SELECT 1 FROM ' . $db->quoteName('#__lcomment_comments', 'r')
-            . ' WHERE ' . $db->quoteName('r.parent_id') . ' = ' . $db->quoteName('#__lcomment_comments.id')
-            . ' AND ' . $db->quoteName('r.state') . ' != -2)';
+        $isDirectlyVisible = static function (object $row) use ($viewerId): bool {
+            if ((int) $row->state === 1) {
+                return true;
+            }
+
+            return (int) $row->state === 0 && $viewerId !== null && (int) $row->user_id === $viewerId;
+        };
+
+        $childrenOf = [];
+
+        foreach ($all as $row) {
+            $childrenOf[(int) $row->parent_id][] = $row;
+        }
+
+        $memo = [];
+
+        $hasVisibleDescendant = function (int $id) use (&$hasVisibleDescendant, &$memo, $childrenOf, $isDirectlyVisible): bool {
+            if (isset($memo[$id])) {
+                return $memo[$id];
+            }
+
+            // Guard against a corrupted parent_id cycle looping forever —
+            // mark this id as "not yet proven visible" before recursing,
+            // same technique CommentTreeBuilder already uses.
+            $memo[$id] = false;
+
+            foreach ($childrenOf[$id] ?? [] as $child) {
+                if ($isDirectlyVisible($child) || $hasVisibleDescendant((int) $child->id)) {
+                    return $memo[$id] = true;
+                }
+            }
+
+            return $memo[$id] = false;
+        };
+
+        $result = [];
+
+        foreach ($all as $row) {
+            if ($isDirectlyVisible($row)) {
+                $result[] = $row;
+
+                continue;
+            }
+
+            if ((int) $row->state === -2 && $hasVisibleDescendant((int) $row->id)) {
+                // Never leak a removed comment's real content/author
+                // through a custom template override of the layout —
+                // the shipped layout already renders a fixed placeholder
+                // for state -2 and never reads these fields, but an
+                // override that forgets to check the state first must
+                // not be able to recover them from the data it's handed.
+                $row->comment_text = '';
+                $row->guest_name = null;
+                $row->guest_email = null;
+                $row->user_id = null;
+                $result[] = $row;
+            }
+        }
+
+        return $result;
     }
 
     /**

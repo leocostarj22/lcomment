@@ -73,10 +73,22 @@ real (`joomla-cms` `6.1-dev`) antes deste spec ser escrito:
   para utilizadores registados **e visitantes**: para um utilizador
   visitante (`id === 0`), `Access::getGroupsByUser(0, true)`
   (`libraries/src/Access/Access.php`) consulta a partir do grupo de
-  visitante configurado em `com_users` (`guest_usergroup`, por padrão 1 =
-  Público) e devolve os seus ancestrais. **Não é preciso nenhum
-  tratamento especial para visitantes** — basta chamar
-  `$app->getIdentity()->getAuthorisedGroups()` sempre, registado ou não.
+  visitante configurado em `com_users` (`guest_usergroup`, por padrão **9
+  = "Guest"**, um grupo filho de "Public" — confirmado contra o SQL de
+  instalação real do Joomla 6.1-dev, `installation/sql/mysql/base.sql`;
+  uma correção feita após a revisão final encontrar que a afirmação
+  original aqui, "por padrão 1", estava errada e tinha causado um bug
+  real de seed em `script.php`) e devolve os seus ancestrais, que
+  incluem sempre o grupo raiz "Public" (id 1) para qualquer utilizador
+  ou visitante. **Não é preciso nenhum tratamento especial para
+  visitantes** — basta chamar `$app->getIdentity()->getAuthorisedGroups()`
+  sempre, registado ou não. **Consequência de desenho:** como "Public"
+  é ancestral de todos, qualquer permissão concedida à linha desse
+  grupo seria herdada por todo o site via OR — por isso o seed em
+  `script.php` nunca grava permissões no grupo raiz (sempre `false`),
+  independentemente de `allow_guests`; a identidade de visitante real é
+  decidida pela linha do grupo configurado em `guest_usergroup` (9 por
+  padrão), não pela linha de "Public".
 
 ## Modelo de dados
 
@@ -117,11 +129,17 @@ O script de instalação do componente (`script.php`, método `install()`)
 insere uma linha por cada grupo existente em `#__usergroups` no momento
 da instalação, com os seguintes padrões:
 
-- **Grupo Público (id configurado em `com_users.guest_usergroup`, por
-  padrão 1)**: `can_post`/`can_reply` = valor atual de `allow_guests`
-  (lido de `ComponentHelper::getParams('com_lcomment')` antes deste
-  parâmetro ser removido do form); `autopublish`/`can_edit_own`/
-  `can_delete_own` = `0`.
+- **Grupo raiz (`parent_id = 0`, normalmente "Public"/id 1)**: todas as
+  5 permissões = `0`, sempre — nunca lê `allow_guests` para esta linha.
+  Ver a nota na secção "Alvo técnico": conceder qualquer permissão à
+  linha do grupo raiz seria herdada por todo o site via a resolução por
+  OR entre grupos autorizados.
+- **Grupo de visitante real (id configurado em
+  `com_users.guest_usergroup`, por padrão 9 = "Guest", não o grupo
+  raiz)**: `can_post`/`can_reply` = valor atual de `allow_guests` (lido
+  de `ComponentHelper::getParams('com_lcomment')` antes deste parâmetro
+  ser removido do form); `autopublish`/`can_edit_own`/`can_delete_own` =
+  `0`.
 - **Grupo Registado (id 2)**: `can_post`/`can_reply`/`can_edit_own`/
   `can_delete_own` = `1`; `autopublish` = `0`.
 - **Todos os outros grupos** (Autor, Editor, Publicador, Super
@@ -153,8 +171,16 @@ do `script.php` (chamado pelo instalador do Joomla numa atualização,
 distinto de `install()` numa instalação nova) — lê o `allow_guests`
 ainda presente na base de dados (campo só removido do `config.xml`
 nesta versão, o valor histórico continua nos `params` da extensão até
-ser lido aqui) antes de preencher a linha do grupo Público. Depois deste
-seed, `allow_guests` deixa de ser lido por qualquer código.
+ser lido aqui) antes de preencher a linha do grupo de visitante real.
+Depois deste seed, `allow_guests` deixa de ser lido por qualquer código.
+
+**Importante:** `install()`/`update()` só semeiam de facto quando a
+tabela está vazia (uma verificação `COUNT(*)` logo no início) — isto
+cobre a instalação nova e esta única migração 0.6.0, mas nunca volta a
+semear em atualizações futuras (0.7.0, 0.8.0, ...), onde a tabela já
+tem linhas. Sem essa guarda, um grupo Joomla criado depois da instalação
+do LComment ganharia todas as 5 permissões na próxima atualização do
+componente, em vez de ficar negado por padrão como esta secção exige.
 
 Versão do pacote: `0.5.0` → `0.6.0`.
 
@@ -295,6 +321,12 @@ mensagem flash):
    mensagem genérica.
 4. Verifica `(int) $table->user_id === (int) $user->id`, senão
    `COM_LCOMMENT_ERROR_NOT_OWNER`.
+4.1. **Correção pós-revisão final:** rejeita de imediato, com a mesma
+   mensagem genérica, se `(int) $table->state === -2` — um comentário
+   eliminado nunca pode voltar através da edição; só a reciclagem do
+   admin tira um comentário desse estado. Sem esta verificação, editar
+   um comentário já eliminado recalculava e gravava um novo estado
+   publicado/pendente como se fosse uma submissão nova, revivendo-o.
 5. Resolve `can_edit_own` para os grupos do utilizador via
    `GroupPermissionResolver`. Se `false`, `COM_LCOMMENT_ERROR_GROUP_NOT_ALLOWED`.
 6. Valida o novo texto com `CommentValidator::validate()` (mesmas regras
@@ -327,12 +359,23 @@ decidir a que Contexto este comentário pertence.
 
 `CommentModel::getItemsFor()` (site) hoje filtra implicitamente por
 `state = 1` (só publicados). Passa a trazer também linhas `state = -2`
-**desde que** exista pelo menos uma outra linha, no mesmo `item_id`, com
-`parent_id` igual ao `id` dessa linha eliminada e `state` diferente de
-`-2` — ou seja, só busca o "cadáver" quando ele ainda tem descendência
-viva, nunca um eliminado sem respostas (que continua simplesmente
-ausente, like today). Implementado com uma subquery `EXISTS` na mesma
-`getListQuery`-like method, sem nova classe.
+**desde que** tenham pelo menos um descendente (não necessariamente
+filho direto) ainda visível — ou seja, só busca o "cadáver" quando a
+sua descendência (em qualquer profundidade) tem algo que o visitante
+atual pode mesmo ver, nunca um eliminado sem respostas visíveis (que
+continua simplesmente ausente, como hoje). **Implementado em PHP, não
+numa única subquery `EXISTS`** (correção pós-revisão final — uma
+`EXISTS` de profundidade fixa falha com cadeias de vários níveis
+eliminados, ex. A eliminado → B eliminado → C publicado, e também
+contava uma resposta pendente/despublicada como "sobrevivente" quando
+não devia): a query busca todos os estados do item, e uma função
+recursiva e memoizada em PHP decide, para cada linha eliminada, se tem
+algum descendente diretamente visível ou, recursivamente, outro
+eliminado que por sua vez tem. As linhas eliminadas devolvidas têm
+`comment_text`/`guest_name`/`guest_email`/`user_id` sempre limpos antes
+de saírem do Model — nunca confiar apenas no layout padrão para
+esconder o conteúdo verdadeiro, já que um template personalizado que
+sobrescreva o layout podia não saber dessa regra.
 
 O layout do comentário (`layouts/comment/item.php` ou equivalente) passa
 a verificar `(int) $item->state === -2` e, nesse caso, renderizar
@@ -375,7 +418,13 @@ página com um formulário). Submenu: `<menu view="permissions">COM_LCOMMENT_MEN
 - **Template**: uma tabela com uma linha por grupo (indentação visual
   conforme o nível), 5 colunas de checkbox (`groups[<id>][can_post]`
   etc.), um botão "Guardar" no toolbar (`ToolbarHelper::custom('permissions.save', ...)`,
-  mesmo padrão de botão custom já usado em `Notifications`).
+  mesmo padrão de botão custom já usado em `Notifications`). **Correção
+  pós-revisão final:** cada linha também leva um campo oculto
+  `groups[<id>][present]`, sem o qual um grupo com as 5 caixas
+  desmarcadas nunca chega a aparecer no POST (checkboxes desmarcadas
+  não são submetidas pelo HTML) — sem este campo, desmarcar tudo não
+  tinha efeito nenhum ao guardar, a linha antiga continuava na base de
+  dados.
 
 ## UI no layout e JS
 

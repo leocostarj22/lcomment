@@ -174,6 +174,16 @@ final class CommentController extends BaseController
             return false;
         }
 
+        // A trashed comment is gone — editing it must never be the way
+        // it comes back. Only the admin's own publish action (never this
+        // site-side endpoint) can move a comment out of state -2.
+        if ((int) $table->state === -2) {
+            $app->enqueueMessage(Text::_('COM_LCOMMENT_ERROR_NOT_OWNER'), 'error');
+            $app->redirect($returnUrl ?: 'index.php');
+
+            return false;
+        }
+
         /** @var \Lcsilva\Component\Lcomment\Site\Model\CommentModel $model */
         $model = $this->getModel('Comment', 'Site');
 

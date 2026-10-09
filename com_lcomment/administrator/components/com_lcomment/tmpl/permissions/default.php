@@ -28,7 +28,10 @@ $flags = [
         <tbody>
         <?php foreach ($this->groups as $group) : ?>
             <tr>
-                <td><?php echo str_repeat('— ', max(0, $group['level'] - 1)) . htmlspecialchars($group['title']); ?></td>
+                <td>
+                    <input type="hidden" name="groups[<?php echo $group['group_id']; ?>][present]" value="1">
+                    <?php echo str_repeat('— ', max(0, $group['level'] - 1)) . htmlspecialchars($group['title']); ?>
+                </td>
                 <?php foreach (array_keys($flags) as $flagKey) : ?>
                     <td>
                         <input type="checkbox"
