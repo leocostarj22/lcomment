@@ -15,14 +15,46 @@ com seu próprio spec → plano → implementação:
 2. **Engajamento** — reações, avaliações, aninhamento real de respostas,
    assinaturas/notificações, visitante vs. registrado (regras avançadas),
    escopo granular de contexto (incluir/excluir comentários por item
-   específico e, para `com_content`, por categoria).
-3. **Moderação & Segurança** — ACL granular por grupo, workflow de publicação,
-   blacklist, denúncias, anti-spam/captcha, anti-flood, filtro de palavrões.
-4. **Apresentação & Conteúdo** — BBCode, emojis/figurinhas, templates/temas e
-   cores, avatares (redes sociais + Gravatar), multilíngue avançado.
-5. **Avançado** — migração de extensões terceiras, busca em tempo real,
-   conformidade RGPD (anonimização/exclusão), Web Services API, fallback de
+   específico e, para `com_content`, por categoria). Decomposta em 5
+   sub-entregas (2a-2e): Escopo Granular de Contexto, Respostas Aninhadas
+   Reais, Reações, Avaliações/Votos de Utilidade (estas quatro já
+   implementadas, testadas ao vivo e enviadas) e Notificação de Resposta
+   (2e, em desenho).
+3. **Moderação & Segurança** — ACL granular por grupo Joomla (matriz de
+   permissões por grupo: postar, responder, publicação automática, editar
+   e eliminar próprio vs. qualquer comentário — mais granular que o
+   Contexto atual, que liga/desliga moderação para todos de uma vez);
+   denúncias (com limite de denúncias até despublicar automaticamente,
+   motivo opcional); blacklist por IP e/ou utilizador (com motivo/notas —
+   a coluna `ip` já reservada desde a Fase 1); anti-flood (intervalo
+   mínimo entre submissões por identidade); limite de comentários por
+   utilizador; filtro de palavrões (lista de termos + palavra de
+   substituição); anti-spam/CAPTCHA.
+4. **Apresentação & Conteúdo** — BBCode (tags configuráveis com padrão +
+   botão + ícone no editor, habilitável por tag); emojis/figurinhas
+   (mantém a decisão de conjunto fixo já tomada na Fase 2c, a menos que
+   seja pedido o contrário); templates/temas e cores (incluindo cor
+   customizável); avatares (Gravatar + redes sociais + imagem padrão);
+   multilíngue avançado; definições de exibição (comentários por página,
+   paginação, formato de data relativo/absoluto, modo de eliminação de
+   comentário+respostas); mensagens customizáveis (sem permissão /
+   fechado / na blacklist).
+5. **Avançado** — migração de extensões terceiras (incluindo JComments,
+   agora com uma referência concreta do formato de dados dele — ver
+   `reference-jcomments-feature-map` na memória do projeto), busca em
+   tempo real, conformidade RGPD (anonimização/exclusão, checkbox de
+   privacidade por grupo de utilizador), Web Services API, fallback de
    injeção universal (buffer) para extensões sem eventos de conteúdo.
+
+> **Nota sobre as Fases 3-5 (2026-10-09):** o detalhamento acima (além da
+> frase original de uma linha por fase) foi informado por um
+> levantamento do JComments, uma extensão de comentários Joomla
+> concorrente/madura, feito a pedido do usuário durante o desenho da
+> Fase 2e — ver a memória `reference-jcomments-feature-map` para o
+> inventário completo das telas de admin inspecionadas. Nenhuma decisão
+> de implementação foi tomada ainda para as Fases 3-5; isto é só um
+> roadmap mais detalhado, cada fase ainda recebe seu próprio ciclo
+> completo de brainstorm → spec → plano quando começar.
 
 Este spec cobre **apenas a Fase 1**.
 
