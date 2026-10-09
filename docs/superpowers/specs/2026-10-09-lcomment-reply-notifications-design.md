@@ -81,6 +81,12 @@ verificação no momento do plano.
 
 ## Modelo de dados
 
+### `#__lcomment_comments` — uma coluna nova
+
+| Campo | Tipo | Notas |
+|---|---|---|
+| `item_url` | VARCHAR(500) NULL | URL da página capturada no momento da submissão (mesmo valor já usado como `return` no `CommentController::save()`). **Continua necessária mesmo com a fila**: o ponto de disparo no admin (publicar) não tem acesso a nenhuma página de origem, só ao que já estiver gravado no comentário desde a sua criação — sem esta coluna, uma notificação enfileirada a partir do admin não teria link nenhum para compor. Esta é a única sobra da versão síncrona anterior do spec; a outra coluna que essa versão propunha, `notified_at`, não é mais necessária — a deduplicação agora vive na `UNIQUE KEY` da tabela de notificações, abaixo.
+
 ### Nova tabela `#__lcomment_notifications`
 
 | Campo | Tipo | Notas |
@@ -104,21 +110,20 @@ dados, não só por lógica de aplicação — que a mesma resposta nunca é
 enfileirada duas vezes (ex.: despublicar e republicar), mesma disciplina
 já aplicada às reações/votos depois da revisão final da Fase 2c.
 
-Isto **substitui por completo** as colunas `item_url`/`notified_at` que
-a versão anterior deste spec propunha adicionar a
-`#__lcomment_comments` — não há nenhuma mudança na tabela de
-comentários nesta versão.
+A coluna `notified_at` que a versão anterior deste spec propunha
+adicionar a `#__lcomment_comments` não é mais necessária — substituída
+pela `UNIQUE KEY` acima. `item_url` continua, pelo motivo já explicado.
 
 ### Migração
 
 - Versão do pacote sobe de `0.4.0` para `0.5.0` em `com_lcomment.xml`.
-- `install.mysql.sql` ganha a nova tabela `#__lcomment_notifications`
-  (instalações novas).
-- Novo `sql/updates/mysql/0.5.0.sql` com o mesmo `CREATE TABLE`
-  (upgrades de instalações existentes) — desta vez de volta ao padrão
-  `CREATE TABLE IF NOT EXISTS` byte-idêntico já usado nas fases
-  anteriores, porque é uma tabela nova outra vez, não uma alteração de
-  tabela existente.
+- `install.mysql.sql`: `item_url` entra direto na definição de
+  `#__lcomment_comments` (instalações novas); a nova tabela
+  `#__lcomment_notifications` também.
+- Novo `sql/updates/mysql/0.5.0.sql` com **dois** comandos (upgrades de
+  instalações existentes): um `ALTER TABLE` adicionando `item_url` a
+  `#__lcomment_comments`, e um `CREATE TABLE IF NOT EXISTS` byte-idêntico
+  ao bloco em `install.mysql.sql` para `#__lcomment_notifications`.
 
 ## `ReplyNotificationPolicy` (classe de domínio pura, testável)
 
@@ -159,7 +164,16 @@ lógica de decisão:
 2. **`CommentModel::publish()`** (admin, sobrescrito — mesmo padrão já
    usado para sobrescrever `getForm()` nesse mesmo model) — depois de
    `parent::publish($pks, $state)`, para cada id em `$pks` quando
-   `$state == 1`.
+   `$state == 1`. **Verificado contra a fonte real do Joomla 6**
+   (`AdminModel::publish(&$pks, $value = 1)`, em
+   `libraries/src/MVC/Model/AdminModel.php`): `$pks` é passado **por
+   referência** e o próprio Joomla já remove dali (`unset($pks[$i])`)
+   qualquer id que já estivesse no estado pedido antes da chamada — ou
+   seja, depois de `parent::publish()` devolver, `$pks` já contém só os
+   ids que **realmente mudaram de estado nesta chamada**. Isso significa
+   que republicar um comentário já publicado nunca chega a invocar
+   `notifyIfNeeded()` para ele — o próprio Joomla filtra antes do nosso
+   código correr, sem precisarmos de detetar a transição nós mesmos.
 
 ### O que faz
 
@@ -184,7 +198,9 @@ lógica de decisão:
    mesmo a regra "sempre o idioma do site" já decidida. Depois busca o
    e-mail e nome do autor do pai, compõe o assunto e o corpo do e-mail
    (nome de quem respondeu, excerto de 200 caracteres do texto da
-   resposta, link), e **insere uma linha** em
+   resposta, e o link — lido diretamente de `item_url` no próprio
+   comentário buscado no passo 2, não reconstruído), e **insere uma
+   linha** em
    `#__lcomment_notifications` — `INSERT` simples via
    `DatabaseInterface`, mesmo estilo já usado em
    `ReactionController::applyDecision()`, dentro de um `try`/`catch` de
@@ -244,20 +260,47 @@ Fase 1).
   "Eliminar tudo" do JComments fica de fora — selecionar tudo e eliminar
   já cobre o mesmo caso, sem precisar de um botão dedicado (YAGNI).
 
-## Plugin de tarefa agendada (`plg_task_lcommentnotifications`)
+## Plugin de tarefa agendada (`plg_task_lcomment`)
 
-Terceiro plugin no pacote, grupo `task`, namespace
-`Lcsilva\Plugin\Task\LcommentNotifications` (mesma convenção de
-namespace por grupo já usada em `Lcsilva\Plugin\Content\Lcomment`/
-`Lcsilva\Plugin\System\Lcomment`). Uma única rotina (ex.:
-`lcomment.process_notifications`) que chama
-`NotificationQueueProcessor::process()` com o limite padrão. Sem
-parâmetros configuráveis por tarefa nesta entrega (YAGNI — o limite fica
-fixo no código, não exposto como campo de formulário da tarefa).
+Terceiro plugin no pacote, grupo `task`, elemento `lcomment` (mesmo
+nome de elemento que `plg_content_lcomment`/`plg_system_lcomment` já
+usam nos seus respetivos grupos — `<folder plugin="lcomment">` no
+manifesto, `PluginHelper::getPlugin('task', 'lcomment')` no
+`services/provider.php`), namespace `Lcsilva\Plugin\Task\Lcomment`
+(mesma convenção de namespace por grupo já usada nos outros dois
+plugins).
 
-Empacotamento: `pkg_lcomment.xml` ganha um terceiro `<file>` de
-constituinte, `build.sh` ganha um terceiro `zip` — mesmo padrão já usado
-para os dois plugins existentes.
+**Verificado contra a fonte real do Joomla 6**
+(`administrator/components/com_scheduler/src/Traits/TaskPluginTrait.php`):
+os três métodos que o plugin nativo `plg_task_sessiongc` usa como
+handlers de evento (`advertiseRoutines`, `standardRoutineHandler`,
+`enhanceTaskItemForm`) já vêm prontos na própria trait — o plugin não
+precisa de escrever nenhum deles, só usar `use TaskPluginTrait;` e
+apontar `getSubscribedEvents()` para eles, exatamente como
+`SessionGC::getSubscribedEvents()` faz. A chave `'form'` de cada entrada
+em `TASKS_MAP` é opcional (`self::TASKS_MAP[$routineId]['form'] ?? ''`,
+confirmado na trait) — como não há parâmetros configuráveis nesta
+entrega, a nossa única rotina (`lcomment.process_notifications`) não
+define essa chave, e o manifesto não precisa de uma pasta `forms/`.
+
+A rotina em si (um método privado, mesmo padrão do `sessionGC()` do
+plugin nativo) chama `NotificationQueueProcessor::process()` com o
+limite padrão e devolve `Status::OK`. Sem parâmetros configuráveis por
+tarefa nesta entrega (YAGNI — o limite fica fixo no código).
+
+Empacotamento:
+- `pkg_lcomment.xml` ganha um terceiro `<file type="plugin" id="lcomment"
+  group="task">`.
+- `build.sh` ganha um terceiro `zip`.
+- `packages/script.php`: o `postflight()` já ativa os dois plugins
+  existentes com uma query `WHERE element = 'lcomment' AND folder IN
+  ('content', 'system')` — como o novo plugin também usa
+  `element = 'lcomment'`, só precisa de estender essa lista para
+  `('content', 'system', 'task')`, sem duplicar a query. Sem isto, o
+  plugin de tarefa ficaria instalado mas desativado por padrão (mesmo
+  comportamento nativo do Joomla para plugins não-editor que o
+  `postflight()` já existe precisamente para contornar), e a rotina
+  nunca apareceria disponível para escolher numa Tarefa Agendada.
 
 ## Conteúdo do e-mail
 
