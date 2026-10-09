@@ -80,7 +80,11 @@ final class VoteController extends BaseController
     private function fail($app, bool $isAjax, string $returnUrl, string $errorKey): bool
     {
         if ($isAjax) {
-            $this->respondJson($app, 400, ['error' => $errorKey]);
+            // Already-translated text, not the raw key: the JS has no way
+            // to resolve a language key to a message, and showing nothing
+            // on a rejected click (e.g. the self-vote block) looks exactly
+            // like a broken button instead of a deliberate rejection.
+            $this->respondJson($app, 400, ['error' => Text::_($errorKey)]);
 
             return false;
         }

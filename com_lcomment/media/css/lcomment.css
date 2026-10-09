@@ -68,6 +68,13 @@
     font-size: 0.85em;
 }
 
+.lcomment-reaction-error {
+    color: #b02a37;
+    font-size: 0.85em;
+    text-align: right;
+    margin-top: 0.15rem;
+}
+
 .lcomment-votes {
     display: flex !important;
     flex-wrap: wrap;
@@ -98,4 +105,11 @@
 .lcomment-vote-active .lcomment-vote-button {
     background: #e7f1ff;
     border-color: #0d6efd;
+}
+
+.lcomment-vote-error {
+    color: #b02a37;
+    font-size: 0.85em;
+    text-align: right;
+    margin-top: 0.15rem;
 }

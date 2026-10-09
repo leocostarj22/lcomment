@@ -13,6 +13,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 container.dataset.pending = '1';
             }
 
+            clearError(container);
+
             fetch(form.action, {
                 method: 'POST',
                 credentials: 'same-origin',
@@ -21,18 +23,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     'X-LComment-Ajax': '1',
                 },
             })
-                .then((response) => {
-                    if (!response.ok) {
-                        throw new Error('Request failed');
+                .then((response) => response.json().then((data) => ({ ok: response.ok, data })))
+                .then(({ ok, data }) => {
+                    if (!ok) {
+                        showError(container, data.error);
+                        return;
                     }
 
-                    return response.json();
+                    updateVotes(container, data);
                 })
-                .then((data) => updateVotes(container, data))
                 .catch(() => {
-                    // Network error or rejected request: leave the DOM as it
-                    // was and let the user retry — the server is still the
-                    // source of truth, nothing is guessed on failure here.
+                    // Network error, or a response body that wasn't valid
+                    // JSON (e.g. an expired CSRF token returns HTML): leave
+                    // the DOM as it was and let the user retry — the server
+                    // is still the source of truth, nothing is guessed here.
                 })
                 .finally(() => {
                     if (container) {
@@ -58,4 +62,32 @@ function updateVotes(container, data) {
         form.classList.toggle('lcomment-vote-active', isMine);
         button.querySelector('.lcomment-vote-count').textContent = String(count);
     });
+}
+
+function showError(container, message) {
+    if (!container || !message) {
+        return;
+    }
+
+    let errorEl = container.nextElementSibling;
+
+    if (!errorEl || !errorEl.classList.contains('lcomment-vote-error')) {
+        errorEl = document.createElement('div');
+        errorEl.className = 'lcomment-vote-error';
+        container.insertAdjacentElement('afterend', errorEl);
+    }
+
+    errorEl.textContent = message;
+}
+
+function clearError(container) {
+    if (!container) {
+        return;
+    }
+
+    const errorEl = container.nextElementSibling;
+
+    if (errorEl && errorEl.classList.contains('lcomment-vote-error')) {
+        errorEl.remove();
+    }
 }

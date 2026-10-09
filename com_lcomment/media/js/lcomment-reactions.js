@@ -5,12 +5,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const container = form.closest('.lcomment-reactions');
 
-            // Guard the whole container, not just this form's own button:
-            // a rapid like -> love click (two different forms) races the
-            // same identity+comment row just as much as a double-click on
-            // the same button does. One request in flight per comment at
-            // a time avoids firing overlapping requests that could both
-            // see "no existing reaction" before either one's write lands.
             if (container && container.dataset.pending === '1') {
                 return;
             }
@@ -18,6 +12,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (container) {
                 container.dataset.pending = '1';
             }
+
+            clearError(container);
 
             fetch(form.action, {
                 method: 'POST',
@@ -27,18 +23,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     'X-LComment-Ajax': '1',
                 },
             })
-                .then((response) => {
-                    if (!response.ok) {
-                        throw new Error('Request failed');
+                .then((response) => response.json().then((data) => ({ ok: response.ok, data })))
+                .then(({ ok, data }) => {
+                    if (!ok) {
+                        showError(container, data.error);
+                        return;
                     }
 
-                    return response.json();
+                    updateReactions(container, data);
                 })
-                .then((data) => updateReactions(container, data))
                 .catch(() => {
-                    // Network error or rejected request: leave the DOM as it
-                    // was and let the user retry — the server is still the
-                    // source of truth, nothing is guessed on failure here.
+                    // Network error, or a response body that wasn't valid
+                    // JSON (e.g. an expired CSRF token returns HTML): leave
+                    // the DOM as it was and let the user retry — the server
+                    // is still the source of truth, nothing is guessed here.
                 })
                 .finally(() => {
                     if (container) {
@@ -77,4 +75,32 @@ function updateReactions(container, data) {
             countEl.remove();
         }
     });
+}
+
+function showError(container, message) {
+    if (!container || !message) {
+        return;
+    }
+
+    let errorEl = container.nextElementSibling;
+
+    if (!errorEl || !errorEl.classList.contains('lcomment-reaction-error')) {
+        errorEl = document.createElement('div');
+        errorEl.className = 'lcomment-reaction-error';
+        container.insertAdjacentElement('afterend', errorEl);
+    }
+
+    errorEl.textContent = message;
+}
+
+function clearError(container) {
+    if (!container) {
+        return;
+    }
+
+    const errorEl = container.nextElementSibling;
+
+    if (errorEl && errorEl.classList.contains('lcomment-reaction-error')) {
+        errorEl.remove();
+    }
 }
