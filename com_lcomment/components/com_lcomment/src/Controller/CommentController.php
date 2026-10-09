@@ -11,6 +11,7 @@ use Joomla\CMS\Factory;
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\MVC\Controller\BaseController;
 use Joomla\CMS\Session\Session;
+use Lcsilva\Component\Lcomment\Administrator\Service\ReplyNotifier;
 use Lcsilva\Component\Lcomment\Administrator\Service\ScopeEvaluator;
 use Lcsilva\Component\Lcomment\Administrator\Service\SubmissionPolicy;
 use Lcsilva\Component\Lcomment\Administrator\Service\SubmissionRequest;
@@ -89,6 +90,7 @@ final class CommentController extends BaseController
         $table->view = $view;
         $table->item_id = $itemId;
         $table->parent_id = $parentId;
+        $table->item_url = $returnUrl;
         $table->comment_text = $policyResult->normalizedText;
         $table->state = $policyResult->initialState;
         $table->language = $app->getLanguage()->getTag();
@@ -112,6 +114,10 @@ final class CommentController extends BaseController
             $app->redirect($returnUrl ?: 'index.php');
 
             return false;
+        }
+
+        if ($policyResult->initialState === 1) {
+            ReplyNotifier::notifyIfNeeded((int) $table->id);
         }
 
         $app->enqueueMessage(
