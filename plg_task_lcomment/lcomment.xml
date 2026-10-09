@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<extension type="plugin" group="task" method="upgrade">
+    <name>plg_task_lcomment</name>
+    <creationDate>2026-10-09</creationDate>
+    <author>leocostadeveloper</author>
+    <license>GNU General Public License version 2 or later</license>
+    <version>0.1.0</version>
+    <description>PLG_TASK_LCOMMENT_XML_DESCRIPTION</description>
+    <namespace path="src">Lcsilva\Plugin\Task\Lcomment</namespace>
+    <files>
+        <folder plugin="lcomment">services</folder>
+        <folder>src</folder>
+        <filename>index.html</filename>
+    </files>
+    <languages folder="language">
+        <language tag="en-GB">en-GB/en-GB.plg_task_lcomment.sys.ini</language>
+        <language tag="pt-PT">pt-PT/pt-PT.plg_task_lcomment.sys.ini</language>
+    </languages>
+</extension>

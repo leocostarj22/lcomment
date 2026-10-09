@@ -12,6 +12,7 @@
         <file type="component" id="com_lcomment">com_lcomment.zip</file>
         <file type="plugin" id="lcomment" group="content">plg_content_lcomment.zip</file>
         <file type="plugin" id="lcomment" group="system">plg_system_lcomment.zip</file>
+        <file type="plugin" id="lcomment" group="task">plg_task_lcomment.zip</file>
     </files>
     <languages folder="language">
         <language tag="en-GB">en-GB/en-GB.pkg_lcomment.sys.ini</language>

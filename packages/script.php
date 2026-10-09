@@ -29,9 +29,10 @@ return new class () implements InstallerScriptInterface {
 
     public function postflight(string $type, InstallerAdapter $adapter): bool
     {
-        // The two LComment plugins ship installed-but-disabled by default
-        // (standard Joomla behaviour for non-editor plugins). The spec
-        // requires them enabled out of the box, so flip them on here.
+        // The three LComment plugins ship installed-but-disabled by
+        // default (standard Joomla behaviour for non-editor plugins).
+        // The spec requires them enabled out of the box, so flip them
+        // on here.
         $db = Factory::getDbo();
 
         $query = $db->getQuery(true)
@@ -40,7 +41,9 @@ return new class () implements InstallerScriptInterface {
             ->where($db->quoteName('type') . ' = ' . $db->quote('plugin'))
             ->where($db->quoteName('element') . ' = ' . $db->quote('lcomment'))
             ->where(
-                $db->quoteName('folder') . ' IN (' . $db->quote('content') . ', ' . $db->quote('system') . ')'
+                $db->quoteName('folder') . ' IN ('
+                    . $db->quote('content') . ', ' . $db->quote('system') . ', ' . $db->quote('task')
+                . ')'
             );
 
         $db->setQuery($query);
