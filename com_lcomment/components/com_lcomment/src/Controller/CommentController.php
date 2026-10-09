@@ -12,6 +12,7 @@ use Joomla\CMS\Language\Text;
 use Joomla\CMS\MVC\Controller\BaseController;
 use Joomla\CMS\Session\Session;
 use Joomla\CMS\Uri\Uri;
+use Lcsilva\Component\Lcomment\Administrator\Service\GroupPermissionResolver;
 use Lcsilva\Component\Lcomment\Administrator\Service\ReplyNotifier;
 use Lcsilva\Component\Lcomment\Administrator\Service\ScopeEvaluator;
 use Lcsilva\Component\Lcomment\Administrator\Service\SubmissionPolicy;
@@ -54,10 +55,14 @@ final class CommentController extends BaseController
         $user = $app->getIdentity();
         $params = ComponentHelper::getParams('com_lcomment');
 
+        $permissions = GroupPermissionResolver::resolve(
+            $model->getGroupPermissions(),
+            $user->getAuthorisedGroups()
+        );
+
         $policyResult = SubmissionPolicy::evaluate(new SubmissionRequest(
             contextActive: $context !== null,
             contextModeration: $context !== null && (bool) $context->moderation,
-            guestsAllowed: (bool) $params->get('allow_guests', 1),
             userId: $user && $user->id > 0 ? (int) $user->id : null,
             text: $text,
             minLength: (int) $params->get('min_length', 3),
@@ -66,6 +71,10 @@ final class CommentController extends BaseController
             guestEmail: $guestEmail,
             itemIncluded: $itemIncluded,
             parentValid: $parentValid,
+            isReply: $parentId !== 0,
+            canPost: $permissions['can_post'],
+            canReply: $permissions['can_reply'],
+            autopublish: $permissions['autopublish'],
         ));
 
         if (!$policyResult->accepted) {

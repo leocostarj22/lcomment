@@ -52,16 +52,61 @@ final class CommentModel extends BaseDatabaseModel
                 [
                     $db->quoteName('state') . ' = 1',
                     '(' . $db->quoteName('state') . ' = 0 AND ' . $db->quoteName('user_id') . ' = :userId)',
+                    '(' . $db->quoteName('state') . ' = -2 AND ' . self::trashedHasSurvivingReplySql($db) . ')',
                 ],
                 'OR'
             )->bind(':userId', $user->id, ParameterType::INTEGER);
         } else {
-            $query->where($db->quoteName('state') . ' = 1');
+            $query->extendWhere(
+                'AND',
+                [
+                    $db->quoteName('state') . ' = 1',
+                    '(' . $db->quoteName('state') . ' = -2 AND ' . self::trashedHasSurvivingReplySql($db) . ')',
+                ],
+                'OR'
+            );
         }
 
         $db->setQuery($query);
 
         return $db->loadObjectList() ?: [];
+    }
+
+    private static function trashedHasSurvivingReplySql(\Joomla\Database\DatabaseInterface $db): string
+    {
+        return 'EXISTS (SELECT 1 FROM ' . $db->quoteName('#__lcomment_comments', 'r')
+            . ' WHERE ' . $db->quoteName('r.parent_id') . ' = ' . $db->quoteName('#__lcomment_comments.id')
+            . ' AND ' . $db->quoteName('r.state') . ' != -2)';
+    }
+
+    /**
+     * @return array<int, array{can_post: bool, can_reply: bool, autopublish: bool, can_edit_own: bool, can_delete_own: bool}>
+     */
+    public function getGroupPermissions(): array
+    {
+        $db = $this->getDatabase();
+
+        $query = $db->getQuery(true)
+            ->select('*')
+            ->from($db->quoteName('#__lcomment_group_permissions'));
+
+        $db->setQuery($query);
+
+        $rows = $db->loadAssocList('group_id');
+
+        $result = [];
+
+        foreach ($rows as $groupId => $row) {
+            $result[(int) $groupId] = [
+                'can_post' => (bool) $row['can_post'],
+                'can_reply' => (bool) $row['can_reply'],
+                'autopublish' => (bool) $row['autopublish'],
+                'can_edit_own' => (bool) $row['can_edit_own'],
+                'can_delete_own' => (bool) $row['can_delete_own'],
+            ];
+        }
+
+        return $result;
     }
 
     public function getCategoryId(string $extension, int $itemId): ?int
