@@ -15,6 +15,7 @@ use Joomla\CMS\Plugin\CMSPlugin;
 use Joomla\CMS\Uri\Uri;
 use Joomla\Event\SubscriberInterface;
 use Lcsilva\Component\Lcomment\Administrator\Service\ContextResolver;
+use Lcsilva\Component\Lcomment\Administrator\Service\GroupPermissionResolver;
 use Lcsilva\Component\Lcomment\Administrator\Service\ScopeEvaluator;
 
 final class Lcomment extends CMSPlugin implements SubscriberInterface
@@ -78,6 +79,12 @@ final class Lcomment extends CMSPlugin implements SubscriberInterface
         $authorNames = $model->getAuthorNames(array_map(static fn ($comment) => $comment->user_id, $items));
         $returnUrl = Uri::getInstance()->toString();
 
+        $currentUser = $app->getIdentity();
+        $userPermissions = GroupPermissionResolver::resolve(
+            $model->getGroupPermissions(),
+            $currentUser->getAuthorisedGroups()
+        );
+
         $app->getLanguage()->load('com_lcomment', \JPATH_SITE);
 
         $webAssetManager = $app->getDocument()->getWebAssetManager();
@@ -109,6 +116,8 @@ final class Lcomment extends CMSPlugin implements SubscriberInterface
                 'votesEnabled' => $votesEnabled,
                 'authorNames' => $authorNames,
                 'returnUrl' => $returnUrl,
+                'userPermissions' => $userPermissions,
+                'currentUserId' => $currentUser->id > 0 ? (int) $currentUser->id : null,
             ],
             \JPATH_ROOT . '/components/com_lcomment/layouts'
         );

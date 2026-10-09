@@ -149,7 +149,39 @@ $renderVotes = function (int $commentId) use ($returnUrl, $votes, $voteLabel): v
     <?php
 };
 
-$renderNode = function (array $node, int $depth) use (&$renderNode, $renderForm, $renderReactions, $renderVotes, $prefillParentId, $prefillText, $authorNames, $reactionsEnabled, $votesEnabled): void {
+$renderEditForm = function (int $commentId, string $currentText, string $returnUrlLocal): void {
+    ?>
+    <details class="lcomment-edit">
+        <summary><?php echo Text::_('COM_LCOMMENT_EDIT_LABEL'); ?></summary>
+        <form method="post" action="<?php echo Route::_('index.php?option=com_lcomment&task=comment.edit'); ?>" class="lcomment-form">
+            <input type="hidden" name="id" value="<?php echo $commentId; ?>">
+            <input type="hidden" name="return" value="<?php echo base64_encode($returnUrlLocal); ?>">
+            <div class="mb-2">
+                <textarea id="lcomment-edit-text-<?php echo $commentId; ?>" name="comment_text" class="form-control" required><?php echo htmlspecialchars($currentText); ?></textarea>
+            </div>
+            <?php echo HTMLHelper::_('form.token'); ?>
+            <button type="submit" class="btn btn-secondary">
+                <?php echo Text::_('COM_LCOMMENT_FORM_SUBMIT_LABEL'); ?>
+            </button>
+        </form>
+    </details>
+    <?php
+};
+
+$renderDeleteButton = function (int $commentId, string $returnUrlLocal): void {
+    ?>
+    <form method="post" action="<?php echo Route::_('index.php?option=com_lcomment&task=comment.delete'); ?>" class="lcomment-form" onsubmit="return confirm('<?php echo htmlspecialchars(Text::_('COM_LCOMMENT_DELETE_CONFIRM'), ENT_QUOTES); ?>');">
+        <input type="hidden" name="id" value="<?php echo $commentId; ?>">
+        <input type="hidden" name="return" value="<?php echo base64_encode($returnUrlLocal); ?>">
+        <?php echo HTMLHelper::_('form.token'); ?>
+        <button type="submit" class="btn btn-sm btn-outline-danger">
+            <?php echo Text::_('COM_LCOMMENT_DELETE_LABEL'); ?>
+        </button>
+    </form>
+    <?php
+};
+
+$renderNode = function (array $node, int $depth) use (&$renderNode, $renderForm, $renderReactions, $renderVotes, $renderEditForm, $renderDeleteButton, $prefillParentId, $prefillText, $authorNames, $reactionsEnabled, $votesEnabled, $userPermissions, $currentUserId, $returnUrl): void {
     $comment = $node['comment'];
     $commentId = (int) $comment->id;
     $depthClass = 'lcomment-depth-' . min($depth, 5);
@@ -157,25 +189,38 @@ $renderNode = function (array $node, int $depth) use (&$renderNode, $renderForm,
     $authorName = $comment->guest_name ?: ($authorNames[(int) $comment->user_id] ?? ('#' . (int) $comment->user_id));
     ?>
     <li class="lcomment-item <?php echo $depthClass; ?>" data-id="<?php echo $commentId; ?>">
-        <strong>
-            <?php echo htmlspecialchars($authorName); ?>
-        </strong>
-        <?php if ((int) $comment->state === 0) : ?>
-            <span class="badge bg-warning"><?php echo Text::_('COM_LCOMMENT_LIST_PENDING_BADGE'); ?></span>
-        <?php endif; ?>
-        <p><?php echo htmlspecialchars((string) $comment->comment_text); ?></p>
+        <?php if ((int) $comment->state === -2) : ?>
+            <p class="lcomment-removed"><em><?php echo Text::_('COM_LCOMMENT_DELETED_PLACEHOLDER'); ?></em></p>
+        <?php else : ?>
+            <strong>
+                <?php echo htmlspecialchars($authorName); ?>
+            </strong>
+            <?php if ((int) $comment->state === 0) : ?>
+                <span class="badge bg-warning"><?php echo Text::_('COM_LCOMMENT_LIST_PENDING_BADGE'); ?></span>
+            <?php endif; ?>
+            <p><?php echo htmlspecialchars((string) $comment->comment_text); ?></p>
 
-        <?php if ($reactionsEnabled) : ?>
-            <?php $renderReactions($commentId); ?>
-        <?php endif; ?>
-        <?php if ($votesEnabled) : ?>
-            <?php $renderVotes($commentId); ?>
-        <?php endif; ?>
+            <?php if ($reactionsEnabled) : ?>
+                <?php $renderReactions($commentId); ?>
+            <?php endif; ?>
+            <?php if ($votesEnabled) : ?>
+                <?php $renderVotes($commentId); ?>
+            <?php endif; ?>
 
-        <details class="lcomment-reply"<?php echo $isReplyOpen ? ' open' : ''; ?>>
-            <summary><?php echo Text::_('COM_LCOMMENT_REPLY_LABEL'); ?></summary>
-            <?php $renderForm($commentId, (string) $commentId, $isReplyOpen ? $prefillText : ''); ?>
-        </details>
+            <?php if ($currentUserId !== null && (int) $comment->user_id === $currentUserId) : ?>
+                <?php if ($userPermissions['can_edit_own']) : ?>
+                    <?php $renderEditForm($commentId, (string) $comment->comment_text, $returnUrl); ?>
+                <?php endif; ?>
+                <?php if ($userPermissions['can_delete_own']) : ?>
+                    <?php $renderDeleteButton($commentId, $returnUrl); ?>
+                <?php endif; ?>
+            <?php endif; ?>
+
+            <details class="lcomment-reply"<?php echo $isReplyOpen ? ' open' : ''; ?>>
+                <summary><?php echo Text::_('COM_LCOMMENT_REPLY_LABEL'); ?></summary>
+                <?php $renderForm($commentId, (string) $commentId, $isReplyOpen ? $prefillText : ''); ?>
+            </details>
+        <?php endif; ?>
 
         <?php if (!empty($node['replies'])) : ?>
             <ul class="lcomment-list list-unstyled">
