@@ -23,8 +23,10 @@ final class SubmissionPolicy
             return new SubmissionResult(false, ['COM_LCOMMENT_ERROR_INVALID_PARENT']);
         }
 
-        if ($request->userId === null && !$request->guestsAllowed) {
-            return new SubmissionResult(false, ['COM_LCOMMENT_ERROR_GUESTS_NOT_ALLOWED']);
+        $permitted = $request->isReply ? $request->canReply : $request->canPost;
+
+        if (!$permitted) {
+            return new SubmissionResult(false, ['COM_LCOMMENT_ERROR_GROUP_NOT_ALLOWED']);
         }
 
         if ($request->userId === null) {
@@ -44,7 +46,7 @@ final class SubmissionPolicy
         return new SubmissionResult(
             true,
             [],
-            $request->contextModeration ? 0 : 1,
+            ($request->contextModeration && !$request->autopublish) ? 0 : 1,
             trim($request->text)
         );
     }

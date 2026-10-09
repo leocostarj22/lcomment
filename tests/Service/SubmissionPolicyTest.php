@@ -15,7 +15,6 @@ final class SubmissionPolicyTest extends TestCase
         return new SubmissionRequest(
             contextActive: $overrides['contextActive'] ?? true,
             contextModeration: $overrides['contextModeration'] ?? true,
-            guestsAllowed: $overrides['guestsAllowed'] ?? true,
             userId: $overrides['userId'] ?? null,
             text: $overrides['text'] ?? 'A valid comment body.',
             minLength: $overrides['minLength'] ?? 3,
@@ -24,6 +23,10 @@ final class SubmissionPolicyTest extends TestCase
             guestEmail: $overrides['guestEmail'] ?? 'guest@example.com',
             itemIncluded: $overrides['itemIncluded'] ?? true,
             parentValid: $overrides['parentValid'] ?? true,
+            isReply: $overrides['isReply'] ?? false,
+            canPost: $overrides['canPost'] ?? true,
+            canReply: $overrides['canReply'] ?? true,
+            autopublish: $overrides['autopublish'] ?? false,
         );
     }
 
@@ -35,35 +38,61 @@ final class SubmissionPolicyTest extends TestCase
         self::assertSame(['COM_LCOMMENT_ERROR_CONTEXT_INACTIVE'], $result->errors);
     }
 
-    public function testRejectsGuestWhenGuestsNotAllowed(): void
+    public function testRejectsNewCommentWhenGroupLacksCanPost(): void
     {
         $result = SubmissionPolicy::evaluate($this->request([
-            'guestsAllowed' => false,
-            'userId' => null,
+            'isReply' => false,
+            'canPost' => false,
+            'canReply' => true,
         ]));
 
         self::assertFalse($result->accepted);
-        self::assertSame(['COM_LCOMMENT_ERROR_GUESTS_NOT_ALLOWED'], $result->errors);
+        self::assertSame(['COM_LCOMMENT_ERROR_GROUP_NOT_ALLOWED'], $result->errors);
     }
 
-    public function testAllowsGuestWhenGuestsAllowed(): void
+    public function testRejectsReplyWhenGroupLacksCanReply(): void
     {
         $result = SubmissionPolicy::evaluate($this->request([
-            'guestsAllowed' => true,
-            'userId' => null,
+            'isReply' => true,
+            'canPost' => true,
+            'canReply' => false,
+        ]));
+
+        self::assertFalse($result->accepted);
+        self::assertSame(['COM_LCOMMENT_ERROR_GROUP_NOT_ALLOWED'], $result->errors);
+    }
+
+    public function testAllowsNewCommentWhenGroupHasCanPost(): void
+    {
+        $result = SubmissionPolicy::evaluate($this->request(['isReply' => false, 'canPost' => true]));
+
+        self::assertTrue($result->accepted);
+    }
+
+    public function testAllowsReplyWhenGroupHasCanReplyEvenWithoutCanPost(): void
+    {
+        $result = SubmissionPolicy::evaluate($this->request([
+            'isReply' => true,
+            'canPost' => false,
+            'canReply' => true,
         ]));
 
         self::assertTrue($result->accepted);
     }
 
-    public function testAllowsLoggedInUserEvenWhenGuestsNotAllowed(): void
+    public function testRejectsRegisteredUserWhenGroupLacksCanPost(): void
     {
+        // The permission check is unified — a registered user is governed
+        // by their own group's can_post exactly like a guest is governed
+        // by the Público group's, with no special-casing by identity.
         $result = SubmissionPolicy::evaluate($this->request([
-            'guestsAllowed' => false,
             'userId' => 42,
+            'isReply' => false,
+            'canPost' => false,
         ]));
 
-        self::assertTrue($result->accepted);
+        self::assertFalse($result->accepted);
+        self::assertSame(['COM_LCOMMENT_ERROR_GROUP_NOT_ALLOWED'], $result->errors);
     }
 
     public function testRejectsInvalidText(): void
@@ -74,9 +103,9 @@ final class SubmissionPolicyTest extends TestCase
         self::assertSame(['COM_LCOMMENT_ERROR_TEXT_REQUIRED'], $result->errors);
     }
 
-    public function testModerationEnabledYieldsPendingState(): void
+    public function testModerationEnabledWithoutAutopublishYieldsPendingState(): void
     {
-        $result = SubmissionPolicy::evaluate($this->request(['contextModeration' => true]));
+        $result = SubmissionPolicy::evaluate($this->request(['contextModeration' => true, 'autopublish' => false]));
 
         self::assertTrue($result->accepted);
         self::assertSame(0, $result->initialState);
@@ -85,6 +114,14 @@ final class SubmissionPolicyTest extends TestCase
     public function testModerationDisabledYieldsPublishedState(): void
     {
         $result = SubmissionPolicy::evaluate($this->request(['contextModeration' => false]));
+
+        self::assertTrue($result->accepted);
+        self::assertSame(1, $result->initialState);
+    }
+
+    public function testAutopublishYieldsPublishedStateEvenWithModerationEnabled(): void
+    {
+        $result = SubmissionPolicy::evaluate($this->request(['contextModeration' => true, 'autopublish' => true]));
 
         self::assertTrue($result->accepted);
         self::assertSame(1, $result->initialState);
@@ -110,8 +147,6 @@ final class SubmissionPolicyTest extends TestCase
 
     public function testTrailingWhitespacePaddingDoesNotBypassMaximumLength(): void
     {
-        // Validation measures the trimmed text, but the text actually stored
-        // must also be the trimmed text, or padding lets oversized input through.
         $padded = str_repeat('a', 100) . str_repeat(' ', 100000);
 
         $result = SubmissionPolicy::evaluate($this->request(['text' => $padded, 'maxLength' => 100]));
@@ -173,15 +208,16 @@ final class SubmissionPolicyTest extends TestCase
         self::assertTrue($result->accepted);
     }
 
-    public function testGuestChecksTakePriorityOverTextErrors(): void
+    public function testGroupCheckTakesPriorityOverGuestDetailChecks(): void
     {
         $result = SubmissionPolicy::evaluate($this->request([
             'userId' => null,
+            'canPost' => false,
             'guestName' => '',
             'text' => '',
         ]));
 
-        self::assertSame(['COM_LCOMMENT_ERROR_GUEST_NAME_REQUIRED'], $result->errors);
+        self::assertSame(['COM_LCOMMENT_ERROR_GROUP_NOT_ALLOWED'], $result->errors);
     }
 
     public function testRejectsItemExcludedByScope(): void
@@ -209,12 +245,11 @@ final class SubmissionPolicyTest extends TestCase
         self::assertSame(['COM_LCOMMENT_ERROR_CONTEXT_INACTIVE'], $result->errors);
     }
 
-    public function testItemExcludedTakesPriorityOverGuestChecks(): void
+    public function testItemExcludedTakesPriorityOverGroupCheck(): void
     {
         $result = SubmissionPolicy::evaluate($this->request([
             'itemIncluded' => false,
-            'guestsAllowed' => false,
-            'userId' => null,
+            'canPost' => false,
         ]));
 
         self::assertSame(['COM_LCOMMENT_ERROR_ITEM_EXCLUDED'], $result->errors);
@@ -245,12 +280,11 @@ final class SubmissionPolicyTest extends TestCase
         self::assertSame(['COM_LCOMMENT_ERROR_ITEM_EXCLUDED'], $result->errors);
     }
 
-    public function testInvalidParentTakesPriorityOverGuestChecks(): void
+    public function testInvalidParentTakesPriorityOverGroupCheck(): void
     {
         $result = SubmissionPolicy::evaluate($this->request([
             'parentValid' => false,
-            'guestsAllowed' => false,
-            'userId' => null,
+            'canPost' => false,
         ]));
 
         self::assertSame(['COM_LCOMMENT_ERROR_INVALID_PARENT'], $result->errors);

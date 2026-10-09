@@ -9,7 +9,6 @@ final class SubmissionRequest
     public function __construct(
         public readonly bool $contextActive,
         public readonly bool $contextModeration,
-        public readonly bool $guestsAllowed,
         public readonly ?int $userId,
         public readonly string $text,
         public readonly int $minLength,
@@ -18,6 +17,10 @@ final class SubmissionRequest
         public readonly string $guestEmail = '',
         public readonly bool $itemIncluded = true,
         public readonly bool $parentValid = true,
+        public readonly bool $isReply = false,
+        public readonly bool $canPost = false,
+        public readonly bool $canReply = false,
+        public readonly bool $autopublish = false,
     ) {
     }
 }
