@@ -50,7 +50,7 @@ $listDirn = $this->state->get('list.direction', 'DESC');
                 <td><?php echo HTMLHelper::_('grid.id', $i, $item->id); ?></td>
                 <td><?php echo htmlspecialchars($item->extension); ?></td>
                 <td><?php echo htmlspecialchars($item->view); ?></td>
-                <td><?php echo htmlspecialchars($item->guest_name ?: ('#' . (int) $item->user_id)); ?></td>
+                <td><?php echo htmlspecialchars((string) ($item->guest_name ?: ($item->author_name ?: ('#' . (int) $item->user_id)))); ?></td>
                 <td><?php echo htmlspecialchars(mb_strimwidth((string) $item->comment_text, 0, 80, '…')); ?></td>
                 <td>
                     <?php if ((int) $item->state === 1) : ?>

@@ -24,28 +24,33 @@ final class CommentsModel extends ListModel
     {
         $db = $this->getDatabase();
         $query = $db->getQuery(true)
-            ->select('*')
-            ->from($db->quoteName('#__lcomment_comments'));
+            ->select('c.*')
+            ->select($db->quoteName('u.name', 'author_name'))
+            ->from($db->quoteName('#__lcomment_comments', 'c'))
+            ->join(
+                'LEFT',
+                $db->quoteName('#__users', 'u') . ' ON ' . $db->quoteName('u.id') . ' = ' . $db->quoteName('c.user_id')
+            );
 
         $search = (string) $this->getState('filter.search', '');
 
         if ($search !== '') {
             $likeSearch = '%' . str_replace(['%', '_'], ['\%', '\_'], $search) . '%';
-            $query->where($db->quoteName('comment_text') . ' LIKE :search')
+            $query->where($db->quoteName('c.comment_text') . ' LIKE :search')
                 ->bind(':search', $likeSearch, ParameterType::STRING);
         }
 
         $state = $this->getState('filter.state', '');
 
         if ($state !== '') {
-            $query->where($db->quoteName('state') . ' = :state')
+            $query->where($db->quoteName('c.state') . ' = :state')
                 ->bind(':state', $state, ParameterType::INTEGER);
         } else {
             // Hide trashed comments from the default view, matching Joomla convention.
-            $query->where($db->quoteName('state') . ' != -2');
+            $query->where($db->quoteName('c.state') . ' != -2');
         }
 
-        $ordering = $this->state->get('list.ordering', 'created');
+        $ordering = $this->state->get('list.ordering', 'c.created');
         $direction = $this->state->get('list.direction', 'DESC');
         $query->order($db->escape($ordering) . ' ' . $db->escape($direction));
 
