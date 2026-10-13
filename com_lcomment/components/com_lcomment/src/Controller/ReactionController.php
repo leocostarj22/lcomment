@@ -9,14 +9,13 @@ namespace Lcsilva\Component\Lcomment\Site\Controller;
 use Joomla\CMS\Component\ComponentHelper;
 use Joomla\CMS\Factory;
 use Joomla\CMS\Language\Text;
-use Joomla\CMS\MVC\Controller\BaseController;
 use Joomla\CMS\Session\Session;
 use Joomla\Database\DatabaseInterface;
 use Joomla\Database\Exception\ExecutionFailureException;
 use Joomla\Database\ParameterType;
 use Lcsilva\Component\Lcomment\Administrator\Service\ReactionToggle;
 
-final class ReactionController extends BaseController
+final class ReactionController extends AbstractLcommentController
 {
     public function save(): bool
     {

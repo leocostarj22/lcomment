@@ -9,7 +9,6 @@ namespace Lcsilva\Component\Lcomment\Site\Controller;
 use Joomla\CMS\Component\ComponentHelper;
 use Joomla\CMS\Factory;
 use Joomla\CMS\Language\Text;
-use Joomla\CMS\MVC\Controller\BaseController;
 use Joomla\CMS\Session\Session;
 use Joomla\Database\DatabaseInterface;
 use Joomla\Database\Exception\ExecutionFailureException;
@@ -17,7 +16,7 @@ use Joomla\Database\ParameterType;
 use Lcsilva\Component\Lcomment\Administrator\Service\ReportPolicy;
 use Lcsilva\Component\Lcomment\Administrator\Table\CommentTable;
 
-final class ReportController extends BaseController
+final class ReportController extends AbstractLcommentController
 {
     public function save(): bool
     {

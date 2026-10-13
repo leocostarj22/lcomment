@@ -9,7 +9,6 @@ namespace Lcsilva\Component\Lcomment\Site\Controller;
 use Joomla\CMS\Component\ComponentHelper;
 use Joomla\CMS\Factory;
 use Joomla\CMS\Language\Text;
-use Joomla\CMS\MVC\Controller\BaseController;
 use Joomla\CMS\Session\Session;
 use Joomla\CMS\Uri\Uri;
 use Joomla\Database\DatabaseInterface;
@@ -22,7 +21,7 @@ use Lcsilva\Component\Lcomment\Administrator\Service\SubmissionPolicy;
 use Lcsilva\Component\Lcomment\Administrator\Service\SubmissionRequest;
 use Lcsilva\Component\Lcomment\Administrator\Table\CommentTable;
 
-final class CommentController extends BaseController
+final class CommentController extends AbstractLcommentController
 {
     public function save(): bool
     {
