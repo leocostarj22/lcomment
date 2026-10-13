@@ -4,3 +4,4 @@ DROP TABLE IF EXISTS `#__lcomment_reactions`;
 DROP TABLE IF EXISTS `#__lcomment_votes`;
 DROP TABLE IF EXISTS `#__lcomment_notifications`;
 DROP TABLE IF EXISTS `#__lcomment_group_permissions`;
+DROP TABLE IF EXISTS `#__lcomment_reports`;
