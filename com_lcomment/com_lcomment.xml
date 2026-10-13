@@ -29,6 +29,7 @@
             <menu view="comments">COM_LCOMMENT_MENU_COMMENTS</menu>
             <menu view="notifications">COM_LCOMMENT_MENU_NOTIFICATIONS</menu>
             <menu view="permissions">COM_LCOMMENT_MENU_PERMISSIONS</menu>
+            <menu view="reports">COM_LCOMMENT_MENU_REPORTS</menu>
         </submenu>
         <files folder="administrator/components/com_lcomment">
             <folder>src</folder>
