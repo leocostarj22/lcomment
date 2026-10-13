@@ -57,6 +57,7 @@
             name="report_threshold"
             type="number"
             default="3"
+            min="1"
             label="COM_LCOMMENT_CONFIG_REPORT_THRESHOLD_LABEL"
         />
     </fieldset>

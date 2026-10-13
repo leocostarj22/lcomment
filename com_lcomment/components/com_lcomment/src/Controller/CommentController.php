@@ -14,6 +14,7 @@ use Joomla\CMS\Session\Session;
 use Joomla\CMS\Uri\Uri;
 use Joomla\Database\DatabaseInterface;
 use Lcsilva\Component\Lcomment\Administrator\Service\CommentValidator;
+use Lcsilva\Component\Lcomment\Administrator\Service\EditStatePolicy;
 use Lcsilva\Component\Lcomment\Administrator\Service\GroupPermissionResolver;
 use Lcsilva\Component\Lcomment\Administrator\Service\ReplyNotifier;
 use Lcsilva\Component\Lcomment\Administrator\Service\ScopeEvaluator;
@@ -212,9 +213,10 @@ final class CommentController extends BaseController
 
         $context = $model->getContext((string) $table->extension, (string) $table->view);
         $contextModeration = $context !== null && (bool) $context->moderation;
+        $wasPublished = (int) $table->state === 1;
 
         $table->comment_text = trim($text);
-        $table->state = ($contextModeration && !$permissions['autopublish']) ? 0 : 1;
+        $table->state = EditStatePolicy::nextState($wasPublished, $contextModeration, $permissions['autopublish']);
         $table->modified = Factory::getDate()->toSql();
 
         if (!$table->check() || !$table->store()) {

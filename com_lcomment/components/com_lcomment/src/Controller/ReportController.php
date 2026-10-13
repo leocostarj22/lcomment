@@ -58,7 +58,13 @@ final class ReportController extends BaseController
 
         $this->insertReport($db, $commentId, $reporterId, $reason);
 
-        $threshold = (int) $params->get('report_threshold', 3);
+        // Never trust the stored param alone — a 0 or negative value
+        // (however it got there: direct DB edit, a pre-existing row
+        // saved before the form's min="1" was added, or just a browser
+        // that doesn't enforce the HTML min hint) would make
+        // reachesAutoUnpublishThreshold() true on the very first report
+        // from anyone, defeating the whole feature's premise.
+        $threshold = max(1, (int) $params->get('report_threshold', 3));
         $total = $this->countReports($db, $commentId);
 
         if (ReportPolicy::reachesAutoUnpublishThreshold($total, $threshold)) {
