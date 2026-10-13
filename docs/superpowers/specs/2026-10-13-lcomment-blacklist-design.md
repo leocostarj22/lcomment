@@ -76,18 +76,22 @@ CREATE TABLE IF NOT EXISTS `#__lcomment_blacklist` (
 - `reason`: nota livre do admin, nunca mostrada ao utilizador
   bloqueado — só aparece na view admin "Blacklist".
 - `UNIQUE KEY (type, value)` — impede duas entradas idênticas ao nível
-  da BD. Ao contrário dos controllers do site (que manipulam
-  `Table` diretamente e tratam a corrida concorrente com um
-  catch-and-recheck manual), este formulário admin passa pelo fluxo
-  padrão `FormController::save()` → `AdminModel::save()` do Joomla:
-  uma violação da `UNIQUE KEY` é apanhada internamente pelo próprio
-  `AdminModel::save()`, que devolve `false` e define
-  `$this->getError()`; o `FormController::save()` herdado já
-  redireciona de volta ao formulário mostrando essa mensagem, sem
-  precisar de código adicional nosso. Não há aqui o mesmo risco de
-  corrida que motivou o catch-and-recheck manual no site (é um admin
-  de cada vez, não submissões anónimas concorrentes), por isso não se
-  justifica repetir esse padrão.
+  da BD, mas só como rede de segurança. Verifiquei o código real de
+  `Joomla\CMS\Table\Table::store()`: apanha qualquer `\Exception` da
+  inserção e faz `$this->setError($e->getMessage())` — a mensagem
+  **crua do driver** (ex.: `SQLSTATE[23000]: ... Duplicate entry ...`),
+  não uma mensagem amigável. Por isso `BlacklistTable::check()`
+  (chamado pelo `AdminModel::save()` *antes* de `store()`) faz a
+  validação amigável primeiro: chama `BlacklistPolicy::validateEntry()`
+  e, se passar, uma consulta `SELECT` própria por `type`+`value` iguais
+  (excluindo o próprio `id` quando a editar) — se já existir,
+  `setError(Text::_('COM_LCOMMENT_ERROR_DUPLICATE_BLACKLIST_ENTRY'))` e
+  devolve `false`, exatamente como o precedente `ContextTable::check()`
+  já faz para a sua própria validação. A `UNIQUE KEY` da BD nunca
+  deveria ser alcançada em condições normais (um admin de cada vez,
+  sem o mesmo risco de corrida concorrente que motivou o
+  catch-and-recheck manual no site) — fica só como garantia estrutural
+  final.
 
 ### Migração (`0.8.0.sql`)
 
@@ -303,11 +307,10 @@ esta ação.") — e redireciona para o `return` da submissão, igual ao
 padrão de erro já usado em todo o componente. Nunca menciona a
 blacklist nem o motivo da entrada.
 
-No formulário admin, uma entrada duplicada (`UNIQUE KEY` violada, via
-o fluxo padrão `AdminModel::save()` descrito acima) ou inválida
-(`BlacklistPolicy::validateEntry()`, chamada no início de
-`BlacklistModel::save()`) mostra a mensagem de erro correspondente no
-próprio formulário, sem perder os dados já introduzidos.
+No formulário admin, uma entrada duplicada ou inválida é apanhada em
+`BlacklistTable::check()` (descrito acima) e mostra a mensagem de erro
+correspondente no próprio formulário, sem perder os dados já
+introduzidos.
 
 ## Novas chaves de idioma
 
