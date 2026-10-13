@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<form>
+    <fieldset name="blacklist">
+        <field
+            name="id"
+            type="number"
+            default="0"
+            label="JGLOBAL_FIELD_ID_LABEL"
+            readonly="true"
+            class="readonly"
+        />
+        <field
+            name="type"
+            type="radio"
+            layout="joomla.form.field.radio.switcher"
+            default="ip"
+            label="COM_LCOMMENT_BLACKLIST_TYPE_LABEL"
+            required="true"
+        >
+            <option value="ip">COM_LCOMMENT_BLACKLIST_TYPE_IP</option>
+            <option value="user">COM_LCOMMENT_BLACKLIST_TYPE_USER</option>
+        </field>
+        <field
+            name="value"
+            type="text"
+            label="COM_LCOMMENT_BLACKLIST_VALUE_LABEL"
+            description="COM_LCOMMENT_BLACKLIST_VALUE_DESC"
+            required="true"
+            filter="string"
+        />
+        <field
+            name="reason"
+            type="textarea"
+            rows="3"
+            label="COM_LCOMMENT_BLACKLIST_REASON_LABEL"
+            filter="string"
+        />
+        <field
+            name="created_by"
+            type="hidden"
+        />
+        <field
+            name="created"
+            type="hidden"
+        />
+    </fieldset>
+</form>
