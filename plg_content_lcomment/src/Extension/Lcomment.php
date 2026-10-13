@@ -71,6 +71,7 @@ final class Lcomment extends CMSPlugin implements SubscriberInterface
         $params = ComponentHelper::getParams('com_lcomment');
         $reactionsEnabled = (bool) $params->get('enable_reactions', 1);
         $votesEnabled = (bool) $params->get('enable_votes', 1);
+        $reportsEnabled = (bool) $params->get('enable_reports', 1);
 
         // Skip the query entirely when the feature is off, not just the
         // display — no point aggregating data nobody can see or act on.
@@ -84,6 +85,12 @@ final class Lcomment extends CMSPlugin implements SubscriberInterface
             $model->getGroupPermissions(),
             $currentUser->getAuthorisedGroups()
         );
+
+        // Only a registered user can report at all — never query this
+        // for a guest, there's nothing it could ever return for one.
+        $reportedCommentIds = ($reportsEnabled && $currentUser->id > 0)
+            ? $model->getReportedCommentIds((int) $currentUser->id)
+            : [];
 
         $app->getLanguage()->load('com_lcomment', \JPATH_SITE);
 
@@ -118,6 +125,8 @@ final class Lcomment extends CMSPlugin implements SubscriberInterface
                 'returnUrl' => $returnUrl,
                 'userPermissions' => $userPermissions,
                 'currentUserId' => $currentUser->id > 0 ? (int) $currentUser->id : null,
+                'reportsEnabled' => $reportsEnabled,
+                'reportedCommentIds' => $reportedCommentIds,
             ],
             \JPATH_ROOT . '/components/com_lcomment/layouts'
         );

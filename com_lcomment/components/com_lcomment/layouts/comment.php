@@ -181,7 +181,32 @@ $renderDeleteButton = function (int $commentId, string $returnUrlLocal): void {
     <?php
 };
 
-$renderNode = function (array $node, int $depth) use (&$renderNode, $renderForm, $renderReactions, $renderVotes, $renderEditForm, $renderDeleteButton, $prefillParentId, $prefillText, $authorNames, $reactionsEnabled, $votesEnabled, $userPermissions, $currentUserId, $returnUrl): void {
+$renderReportForm = function (int $commentId, string $returnUrlLocal): void {
+    ?>
+    <details class="lcomment-report">
+        <summary><?php echo Text::_('COM_LCOMMENT_REPORT_LABEL'); ?></summary>
+        <form method="post" action="<?php echo Route::_('index.php?option=com_lcomment&task=report.save'); ?>" class="lcomment-form">
+            <input type="hidden" name="comment_id" value="<?php echo $commentId; ?>">
+            <input type="hidden" name="return" value="<?php echo base64_encode($returnUrlLocal); ?>">
+            <div class="mb-2">
+                <label for="lcomment-report-reason-<?php echo $commentId; ?>"><?php echo Text::_('COM_LCOMMENT_REPORT_REASON_LABEL'); ?></label>
+                <select id="lcomment-report-reason-<?php echo $commentId; ?>" name="reason" class="form-select">
+                    <option value="spam"><?php echo Text::_('COM_LCOMMENT_REPORT_REASON_SPAM'); ?></option>
+                    <option value="abusive"><?php echo Text::_('COM_LCOMMENT_REPORT_REASON_ABUSIVE'); ?></option>
+                    <option value="hate_speech"><?php echo Text::_('COM_LCOMMENT_REPORT_REASON_HATE_SPEECH'); ?></option>
+                    <option value="other"><?php echo Text::_('COM_LCOMMENT_REPORT_REASON_OTHER'); ?></option>
+                </select>
+            </div>
+            <?php echo HTMLHelper::_('form.token'); ?>
+            <button type="submit" class="btn btn-sm btn-outline-secondary">
+                <?php echo Text::_('COM_LCOMMENT_REPORT_CONFIRM_LABEL'); ?>
+            </button>
+        </form>
+    </details>
+    <?php
+};
+
+$renderNode = function (array $node, int $depth) use (&$renderNode, $renderForm, $renderReactions, $renderVotes, $renderEditForm, $renderDeleteButton, $renderReportForm, $prefillParentId, $prefillText, $authorNames, $reactionsEnabled, $votesEnabled, $userPermissions, $currentUserId, $returnUrl, $reportsEnabled, $reportedCommentIds): void {
     $comment = $node['comment'];
     $commentId = (int) $comment->id;
     $depthClass = 'lcomment-depth-' . min($depth, 5);
@@ -214,6 +239,10 @@ $renderNode = function (array $node, int $depth) use (&$renderNode, $renderForm,
                 <?php if ($userPermissions['can_delete_own']) : ?>
                     <?php $renderDeleteButton($commentId, $returnUrl); ?>
                 <?php endif; ?>
+            <?php endif; ?>
+
+            <?php if ($reportsEnabled && $currentUserId !== null && (int) $comment->user_id !== $currentUserId && !isset($reportedCommentIds[$commentId])) : ?>
+                <?php $renderReportForm($commentId, $returnUrl); ?>
             <?php endif; ?>
 
             <details class="lcomment-reply"<?php echo $isReplyOpen ? ' open' : ''; ?>>

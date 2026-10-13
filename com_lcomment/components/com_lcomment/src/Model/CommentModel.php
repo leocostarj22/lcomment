@@ -151,6 +151,32 @@ final class CommentModel extends BaseDatabaseModel
         return $result;
     }
 
+    /**
+     * @return array<int, true> Set of comment ids this user has already
+     *   reported — presence in the array means "already reported", check
+     *   with isset().
+     */
+    public function getReportedCommentIds(int $userId): array
+    {
+        $db = $this->getDatabase();
+
+        $query = $db->getQuery(true)
+            ->select($db->quoteName('comment_id'))
+            ->from($db->quoteName('#__lcomment_reports'))
+            ->where($db->quoteName('user_id') . ' = :userId')
+            ->bind(':userId', $userId, ParameterType::INTEGER);
+
+        $db->setQuery($query);
+
+        $result = [];
+
+        foreach ($db->loadColumn() as $commentId) {
+            $result[(int) $commentId] = true;
+        }
+
+        return $result;
+    }
+
     public function getCategoryId(string $extension, int $itemId): ?int
     {
         if ($extension !== 'com_content') {
