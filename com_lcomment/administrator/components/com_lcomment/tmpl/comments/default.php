@@ -40,6 +40,7 @@ $listDirn = $this->state->get('list.direction', 'DESC');
                 <th><?php echo Text::_('COM_LCOMMENT_COMMENTS_AUTHOR_LABEL'); ?></th>
                 <th><?php echo Text::_('COM_LCOMMENT_COMMENTS_TEXT_LABEL'); ?></th>
                 <th><?php echo Text::_('COM_LCOMMENT_CONTEXT_PUBLISHED_LABEL'); ?></th>
+                <th><?php echo Text::_('COM_LCOMMENT_COMMENTS_ACTIONS_LABEL'); ?></th>
             </tr>
         </thead>
         <tbody>
@@ -64,6 +65,19 @@ $listDirn = $this->state->get('list.direction', 'DESC');
                         <?php echo Text::_('JTRASHED'); ?>
                     <?php else : ?>
                         <?php echo Text::_('JUNPUBLISHED'); ?>
+                    <?php endif; ?>
+                </td>
+                <td>
+                    <?php if (!empty($item->ip)) : ?>
+                        <a href="<?php echo \Joomla\CMS\Router\Route::_('index.php?option=com_lcomment&task=blacklist.add&bl_type=ip&bl_value=' . rawurlencode((string) $item->ip)); ?>">
+                            <?php echo Text::_('COM_LCOMMENT_COMMENTS_BLOCK_IP_LABEL'); ?>
+                        </a>
+                    <?php endif; ?>
+                    <?php if (!empty($item->user_id)) : ?>
+                        <br>
+                        <a href="<?php echo \Joomla\CMS\Router\Route::_('index.php?option=com_lcomment&task=blacklist.add&bl_type=user&bl_value=' . (int) $item->user_id); ?>">
+                            <?php echo Text::_('COM_LCOMMENT_COMMENTS_BLOCK_USER_LABEL'); ?>
+                        </a>
                     <?php endif; ?>
                 </td>
             </tr>
